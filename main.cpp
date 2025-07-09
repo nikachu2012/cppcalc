@@ -672,7 +672,7 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
     }
     else if (t.type == SYNTAX_TYPE_IMMEDIATE)
     {
-        printf("Immediate(Type: %d, Data: %s)\n", t.data.im->type, t.data.im->data);
+        printf("Immediate(Type: %d, Data: %s)", t.data.im->type, t.data.im->data);
     }
     else if (t.type == SYNTAX_TYPE_FUNCTIONCALL)
     {
@@ -682,9 +682,10 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
         printf("Argument: ");
 
         dumpExpr(t.data.fn->arg, indentcount + 1);
+        putchar('\n');
 
         indent(indentcount);
-        puts(")");
+        putchar(')');
     }
     else if (t.type == SYNTAX_TYPE_ASSIGN)
     {
@@ -694,9 +695,10 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
         printf("rhs: ");
 
         dumpExpr(t.data.as->rhs, indentcount + 1);
+        putchar('\n');
 
         indent(indentcount);
-        puts(")");
+        putchar(')');
     }
     else
     {
@@ -712,14 +714,16 @@ void dumpEquation(SYNTAX_EQUATION eq, int indentcount)
     indent(indentcount + 1);
     printf("Left : ");
     dumpExpr(eq.l, indentcount + 1);
+    putchar('\n');
 
     // rhs
     indent(indentcount + 1);
     printf("Right: ");
     dumpExpr(eq.r, indentcount + 1);
+    putchar('\n');
 
     indent(indentcount);
-    puts(")");
+    putchar(')');
 }
 
 int calcExpr(SYNTAX_EXPRESSION t)
@@ -766,18 +770,18 @@ void dumpIf(SYNTAX_IF iff, int indentCount)
     dumpExpr(iff.condition, indentCount + 1);
     puts(",");
 
-    indent(indentCount);
+    indent(indentCount + 1);
     printf("Statement: [\n");
 
     for (auto &x : iff.st)
     {
-        indent(indentCount + 1);
-        dumpStatement(x, indentCount + 1);
+        indent(indentCount + 2);
+        dumpStatement(x, indentCount + 2);
     }
 
     indent(indentCount);
     printf("]");
-    puts(")");
+    putchar(')');
 }
 
 void dumpWhile(SYNTAX_WHILE wh, int indentCount)
@@ -790,12 +794,15 @@ void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
     {
     case SYNTAX_STMT_EXPR:
         dumpExpr(*st.data.ex, indentcount);
+        putchar('\n');
         break;
     case SYNTAX_STMT_IF:
         dumpIf(*st.data.iff, indentcount);
+        putchar('\n');
         break;
     case SYNTAX_STMT_WHILE:
         dumpWhile(*st.data.wh, indentcount);
+        putchar('\n');
         break;
     default:
         return;
@@ -805,7 +812,6 @@ void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
 
 void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
 {
-    printf("%ld\n", pro.e.size());
     for (auto &x : pro.e)
     {
         if (x.type == SYNTAX_PRG_STATEMENT)
