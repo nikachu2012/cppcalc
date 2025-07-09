@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 
-#define BUFSIZ 1024
+#define BUFFERSIZ 1024
 
-char buf[BUFSIZ];
+char buf[BUFFERSIZ];
 size_t bufindex = 0;
 
 const char *t;
