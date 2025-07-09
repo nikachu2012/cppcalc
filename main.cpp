@@ -156,6 +156,7 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
         case '+':
         case '-':
         case '*':
+        case '=':
             val->op = c;
             return LEXER_TYPE_OPERATOR;
             break;
@@ -197,7 +198,8 @@ enum SYNTAX_TYPE
     SYNTAX_TYPE_EXPRESSION = 0,
     SYNTAX_TYPE_EQUATION,
     SYNTAX_TYPE_IMMEDIATE,
-    SYNTAX_TYPE_FUNCTIONCALL
+    SYNTAX_TYPE_FUNCTIONCALL,
+    SYNTAX_TYPE_ASSIGN,
 };
 
 enum SYNTAX_IMMEDIATE_TYPE
@@ -214,6 +216,7 @@ struct SYNTAX_IMMEDIATE
 
 struct SYNTAX_EQUATION;
 struct SYNTAX_FUNCTIONCALL;
+struct SYNTAX_ASSIGN;
 
 struct SYNTAX_EXPRESSION
 {
@@ -222,7 +225,15 @@ struct SYNTAX_EXPRESSION
         SYNTAX_EQUATION *eq;
         SYNTAX_IMMEDIATE *im;
         SYNTAX_FUNCTIONCALL *fn;
+        SYNTAX_ASSIGN *as;
     } data;
+};
+
+struct SYNTAX_ASSIGN
+{
+    char *type; // char * | nullptr
+    char *dest;
+    SYNTAX_EXPRESSION rhs;
 };
 
 struct SYNTAX_FUNCTIONCALL
@@ -520,6 +531,8 @@ SYNTAX_EXPRESSION parseTerm()
 /*
  * factor ::= digit
  *          | keyword
+ *          | keyword "(" expr ")"
+ *          | keyword = expr
  *          | "(" expr ")"
  */
 SYNTAX_EXPRESSION parseFactor()
@@ -573,9 +586,8 @@ SYNTAX_EXPRESSION parseFactor()
         LEXER_RESULT val_next;
         LEXER_TYPE type_next = lexer(&val_next);
 
-        switch (type_next)
+        if (type_next == LEXER_TYPE_LEFT_BRACKET)
         {
-        case LEXER_TYPE_LEFT_BRACKET: {
             // 関数呼び出し
             // keyword "(" expr ")"
             assert(val_next.op == '(');
@@ -594,22 +606,46 @@ SYNTAX_EXPRESSION parseFactor()
             p->name = strdup(temp_name);
 
             return {SYNTAX_TYPE_FUNCTIONCALL, {.fn = p}};
-            break;
         }
-        case LEXER_TYPE_OPERATOR: {
-            // 変数への書き込み
-            if (val_next.op == '=')
-            {
-                // keyword "=" expr
-            }
-            else
-            {
-                lexer_pb();
-            }
-            break;
+        else if (type_next == LEXER_TYPE_OPERATOR && val_next.op == '=')
+        {
+            // 定義済み変数への値書き込み
+            // keyword "=" expr
+            SYNTAX_EXPRESSION expr = parseExpr();
+
+            SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
+            as->dest = strdup(val.text);
+            as->rhs = expr;
+            as->type = nullptr;
+
+            return {SYNTAX_TYPE_ASSIGN, {.as = as}};
         }
-        default:
-            break;
+        else if (type_next == LEXER_TYPE_KEYWORD)
+        {
+            // 変数定義
+            // keyword keyword "=" expr
+            char *dest = strdup(val_next.text);
+
+            LEXER_RESULT val_next_next;
+            LEXER_TYPE type_next_next = lexer(&val_next_next);
+            assert(type_next_next == LEXER_TYPE_OPERATOR);
+            assert(val_next_next.op == '=');
+            // エラー出力時にdestを開放する
+
+            SYNTAX_EXPRESSION expr = parseExpr();
+
+            SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
+            as->dest = dest;
+            as->rhs = expr;
+            as->type = temp_name;
+
+            return {SYNTAX_TYPE_ASSIGN, {.as = as}};
+        }
+        else
+        {
+            // keywordのみ
+            lexer_pb();
+            return {};
         }
         break;
     }
@@ -646,6 +682,18 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
         printf("Argument: ");
 
         dumpExpr(t.data.fn->arg, indentcount + 1);
+
+        indent(indentcount);
+        puts(")");
+    }
+    else if (t.type == SYNTAX_TYPE_ASSIGN)
+    {
+        printf("Assign(type: %s, dest: %s\n", t.data.as->type != nullptr ? "" : t.data.as->type, t.data.as->dest);
+
+        indent(indentcount + 1);
+        printf("rhs: ");
+
+        dumpExpr(t.data.as->rhs, indentcount + 1);
 
         indent(indentcount);
         puts(")");
@@ -773,7 +821,7 @@ void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
 }
 int main(void)
 {
-    std::string target = "/**/if 11451+4 {func(11+451*4); (1145+14)*1919;}114+5+14;114*5+14;";
+    std::string target = "/**/if 11451+4 {func(11+451*4); int c = 10;(1145+14)*1919;}114+5+14;114*5+14;";
     t = target.c_str();
 
     SYNTAX_PROGRAM t = parseProgram();
