@@ -197,6 +197,7 @@ enum SYNTAX_TYPE
     SYNTAX_TYPE_EXPRESSION = 0,
     SYNTAX_TYPE_EQUATION,
     SYNTAX_TYPE_IMMEDIATE,
+    SYNTAX_TYPE_FUNCTIONCALL
 };
 
 enum SYNTAX_IMMEDIATE_TYPE
@@ -212,6 +213,7 @@ struct SYNTAX_IMMEDIATE
 };
 
 struct SYNTAX_EQUATION;
+struct SYNTAX_FUNCTIONCALL;
 
 struct SYNTAX_EXPRESSION
 {
@@ -219,7 +221,14 @@ struct SYNTAX_EXPRESSION
     union {
         SYNTAX_EQUATION *eq;
         SYNTAX_IMMEDIATE *im;
+        SYNTAX_FUNCTIONCALL *fn;
     } data;
+};
+
+struct SYNTAX_FUNCTIONCALL
+{
+    char *name;
+    SYNTAX_EXPRESSION arg;
 };
 
 enum SYNTAX_OPERATOR
@@ -551,13 +560,57 @@ SYNTAX_EXPRESSION parseFactor()
         LEXER_RESULT val;
         LEXER_TYPE type = lexer(&val);
         assert(type == LEXER_TYPE_RIGHT_BRACKET);
-        assert(val.op = ')');
+        assert(val.op == ')');
 
         return expr;
         break;
     }
     case LEXER_TYPE_KEYWORD: {
         // キーワードの時
+        // キーワードの次を解析
+        char *temp_name = strdup(val.text);
+
+        LEXER_RESULT val_next;
+        LEXER_TYPE type_next = lexer(&val_next);
+
+        switch (type_next)
+        {
+        case LEXER_TYPE_LEFT_BRACKET: {
+            // 関数呼び出し
+            // keyword "(" expr ")"
+            assert(val_next.op == '(');
+            SYNTAX_EXPRESSION expr = parseExpr();
+
+            LEXER_RESULT val_next_next;
+            LEXER_TYPE type_next_next = lexer(&val_next_next);
+            assert(type_next_next == LEXER_TYPE_RIGHT_BRACKET);
+            assert(val_next_next.op == ')');
+
+            // 戻り値の準備
+            SYNTAX_FUNCTIONCALL *p = (SYNTAX_FUNCTIONCALL *)malloc(sizeof(SYNTAX_FUNCTIONCALL));
+            assert(p != NULL);
+
+            p->arg = expr;
+            p->name = strdup(temp_name);
+
+            return {SYNTAX_TYPE_FUNCTIONCALL, {.fn = p}};
+            break;
+        }
+        case LEXER_TYPE_OPERATOR: {
+            // 変数への書き込み
+            if (val_next.op == '=')
+            {
+                // keyword "=" expr
+            }
+            else
+            {
+                lexer_pb();
+            }
+            break;
+        }
+        default:
+            break;
+        }
         break;
     }
     default:
@@ -584,6 +637,22 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
     else if (t.type == SYNTAX_TYPE_IMMEDIATE)
     {
         printf("Immediate(Type: %d, Data: %s)\n", t.data.im->type, t.data.im->data);
+    }
+    else if (t.type == SYNTAX_TYPE_FUNCTIONCALL)
+    {
+        printf("FuncionCall(name: %s\n", t.data.fn->name);
+
+        indent(indentcount + 1);
+        printf("Argument: ");
+
+        dumpExpr(t.data.fn->arg, indentcount + 1);
+
+        indent(indentcount);
+        puts(")");
+    }
+    else
+    {
+        puts("WARNING!!! Unknown ExprType.");
     }
 }
 
@@ -704,7 +773,7 @@ void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
 }
 int main(void)
 {
-    std::string target = "/**/if 11451+4 {11+451*4; (1145+14)*1919;}114+5+14;114*5+14;";
+    std::string target = "/**/if 11451+4 {func(11+451*4); (1145+14)*1919;}114+5+14;114*5+14;";
     t = target.c_str();
 
     SYNTAX_PROGRAM t = parseProgram();
