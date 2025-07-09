@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #define BUFSIZ 1024
 
@@ -11,6 +12,8 @@ char buf[BUFSIZ];
 size_t bufindex = 0;
 
 const char *t;
+
+#define allocate(type, count) (type *)malloc(sizeof(type) * count)
 
 void addc(char c)
 {
@@ -64,7 +67,8 @@ enum LEXER_TYPE
     LEXER_TYPE_KEYWORD,
     LEXER_TYPE_OPERATOR,
     LEXER_TYPE_LEFT_BRACKET,
-    LEXER_TYPE_RIGHT_BRACKET
+    LEXER_TYPE_RIGHT_BRACKET,
+    LEXER_TYPE_SEMICOLON,
 };
 
 const char *prev_target;
@@ -83,6 +87,11 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
     {
         switch (c)
         {
+        case ' ':
+        case '\t':
+        case '\n':
+            continue;
+            break;
         case '/':
             c = read();
             if (c == '/')
@@ -161,6 +170,9 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             val->text = buf;
             return LEXER_TYPE_STRING;
             break;
+        case ';':
+            return LEXER_TYPE_SEMICOLON;
+            break;
         default:
             // KEYWORD
             addc(c);
@@ -225,11 +237,204 @@ struct SYNTAX_EQUATION
     SYNTAX_EXPRESSION l, r;
 };
 
+enum SYNTAX_STMT_TYPE
+{
+    SYNTAX_STMT_EXPR,
+    SYNTAX_STMT_IF,
+    SYNTAX_STMT_WHILE,
+};
+
+struct SYNTAX_IF;
+struct SYNTAX_WHILE;
+
+struct SYNTAX_STATEMENT
+{
+    SYNTAX_STMT_TYPE type;
+    union {
+        SYNTAX_EXPRESSION *ex;
+        SYNTAX_IF *iff; // ifが予約語のため
+        SYNTAX_WHILE *wh;
+    } data;
+};
+
+struct SYNTAX_IF
+{
+    SYNTAX_EXPRESSION condition;
+    std::vector<SYNTAX_STATEMENT> st;
+};
+
+struct SYNTAX_WHILE
+{
+    SYNTAX_EXPRESSION condition;
+    std::vector<SYNTAX_STATEMENT> st;
+};
+
+struct SYNTAX_FUNC_DEF
+{
+    char *name;
+    void *args;
+    char *returnType;
+    std::vector<SYNTAX_STATEMENT> st;
+};
+
+enum SYNTAX_PRG_TYPE
+{
+    SYNTAX_PRG_STATEMENT,
+    SYNTAX_FUNCTION_DEF
+};
+
+struct SYNTAX_PRG_ELEM
+{
+    SYNTAX_PRG_TYPE type;
+    union {
+        SYNTAX_STATEMENT *st;
+        SYNTAX_FUNC_DEF *fn;
+    } data;
+};
+
+struct SYNTAX_PROGRAM
+{
+    std::vector<SYNTAX_PRG_ELEM> e;
+};
+
 // Prototype Declare
 SYNTAX_EXPRESSION parseExpr();
 SYNTAX_EXPRESSION parseTerm();
 SYNTAX_EXPRESSION parseFactor();
+SYNTAX_PROGRAM parseProgram();
+SYNTAX_FUNC_DEF parseFunctionDefine();
+SYNTAX_STATEMENT parseStatement();
+/*
+ * program ::= { statement | function-define }
+ */
+SYNTAX_PROGRAM parseProgram()
+{
+    std::vector<SYNTAX_PRG_ELEM> prg;
 
+    while (1)
+    {
+        LEXER_RESULT val;
+        LEXER_TYPE type = lexer(&val);
+        lexer_pb();
+
+        if (type == LEXER_TYPE_END)
+            break;
+
+        if (type == LEXER_TYPE_KEYWORD && !strcmp(val.text, "fn"))
+        {
+            // function define
+            auto fn = allocate(SYNTAX_FUNC_DEF, 1);
+            *fn = parseFunctionDefine();
+
+            prg.push_back({SYNTAX_FUNCTION_DEF, {.fn = fn}});
+        }
+        else
+        {
+            auto st = allocate(SYNTAX_STATEMENT, 1);
+            *st = parseStatement();
+
+            prg.push_back({SYNTAX_PRG_STATEMENT, {.st = st}});
+        }
+    }
+
+    return {prg};
+}
+/*
+ * block ::= "{" {statement} "}"
+ */
+std::vector<SYNTAX_STATEMENT> parseBlock()
+{
+    std::vector<SYNTAX_STATEMENT> res;
+
+    LEXER_RESULT val;
+    LEXER_TYPE type = lexer(&val);
+
+    assert(type == LEXER_TYPE_LEFT_BRACKET);
+    assert(val.op == '{');
+
+    while (1)
+    {
+        LEXER_RESULT val;
+        LEXER_TYPE type = lexer(&val);
+
+        if (type == LEXER_TYPE_RIGHT_BRACKET && val.op == '}')
+            break;
+        else
+            lexer_pb();
+
+        SYNTAX_STATEMENT statement = parseStatement();
+        res.push_back(statement);
+    }
+    return res;
+}
+/*
+ * function-define ::= "fn" keyword "(" argument ")" "->" keyword block
+ */
+SYNTAX_FUNC_DEF parseFunctionDefine()
+{
+    return {};
+}
+/*
+ * statement ::= expr ";"
+ *             | "if" expr block
+ *             | "if" expr block "else" block
+ *             | "while" expr block
+ */
+SYNTAX_STATEMENT parseStatement()
+{
+    LEXER_RESULT val;
+    LEXER_TYPE type = lexer(&val);
+
+    if (type == LEXER_TYPE_KEYWORD && !strcmp(val.text, "if"))
+    {
+        // if
+        SYNTAX_EXPRESSION ex = parseExpr();
+
+        auto block = parseBlock();
+
+        SYNTAX_IF *iff = allocate(SYNTAX_IF, 1);
+        iff->condition = ex;
+        iff->st = block;
+
+        return {SYNTAX_STMT_IF, {.iff = iff}};
+    }
+    else if (type == LEXER_TYPE_KEYWORD && !strcmp(val.text, "while"))
+    {
+        // while
+        SYNTAX_EXPRESSION ex = parseExpr();
+
+        auto block = parseBlock();
+
+        SYNTAX_WHILE *wh = allocate(SYNTAX_WHILE, 1);
+        wh->condition = ex;
+        wh->st = block;
+
+        return {SYNTAX_STMT_WHILE, {.wh = wh}};
+    }
+    else
+    {
+        lexer_pb();
+
+        SYNTAX_EXPRESSION *ex = allocate(SYNTAX_EXPRESSION, 1);
+        *ex = parseExpr();
+
+        LEXER_TYPE type = lexer(&val);
+        if (type == LEXER_TYPE_SEMICOLON)
+        {
+            return {SYNTAX_STMT_EXPR, {.ex = ex}};
+        }
+        else
+        {
+            lexer_pb();
+            return {};
+        }
+    }
+}
+/*
+ * condition ::= expr "<=" expr
+ *             | expr "==" expr
+ *             | とか色々
+ */
 /*
  * expr ::= term
  *        | term ["+" term]*
@@ -436,44 +641,79 @@ int calcExpr(SYNTAX_EXPRESSION t)
     }
 }
 
+void dumpStatement(SYNTAX_STATEMENT st, int indentcount);
+
+void dumpIf(SYNTAX_IF iff, int indentCount)
+{
+    printf("If(Condition: ");
+    dumpExpr(iff.condition, indentCount + 1);
+    puts(",");
+
+    indent(indentCount);
+    printf("Statement: [\n");
+
+    for (auto &x : iff.st)
+    {
+        indent(indentCount + 1);
+        dumpStatement(x, indentCount + 1);
+    }
+
+    indent(indentCount);
+    printf("]");
+    puts(")");
+}
+
+void dumpWhile(SYNTAX_WHILE wh, int indentCount)
+{
+}
+
+void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
+{
+    switch (st.type)
+    {
+    case SYNTAX_STMT_EXPR:
+        dumpExpr(*st.data.ex, indentcount);
+        break;
+    case SYNTAX_STMT_IF:
+        dumpIf(*st.data.iff, indentcount);
+        break;
+    case SYNTAX_STMT_WHILE:
+        dumpWhile(*st.data.wh, indentcount);
+        break;
+    default:
+        return;
+        break;
+    }
+}
+
+void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
+{
+    printf("%ld\n", pro.e.size());
+    for (auto &x : pro.e)
+    {
+        if (x.type == SYNTAX_PRG_STATEMENT)
+        {
+            dumpStatement(*x.data.st, indentcount);
+        }
+        else if (x.type == SYNTAX_FUNCTION_DEF)
+        {
+            puts("Functiondef");
+            // dumpFunctionDef(x.data.fn);
+        }
+    }
+}
 int main(void)
 {
-    std::string target = "/**/114*5+14";
+    std::string target = "/**/if 11451+4 {11+451*4; (1145+14)*1919;}114+5+14;114*5+14;";
     t = target.c_str();
 
-    // LEXER_RESULT val;
-    // LEXER_TYPE type;
-    // while ((type = lexer(&val)) != LEXER_TYPE_END)
-    // {
-    //     switch (type)
-    //     {
-    //     case LEXER_TYPE_KEYWORD:
-    //         printf("KEYWORD : %s\n", val.text);
-    //         break;
-    //     case LEXER_TYPE_OPERATOR:
-    //         printf("OPERATOR: %c\n", val.op);
-    //         break;
-    //     case LEXER_TYPE_INTEGER:
-    //         printf("INTEGER : %s\n", val.text);
-    //         break;
-    //     case LEXER_TYPE_LEFT_BRACKET:
-    //         printf("LEFT_BRACKET : %c\n", val.op);
-    //         break;
-    //     case LEXER_TYPE_RIGHT_BRACKET:
-    //         printf("RIGHT_BRACKET : %c\n", val.op);
-    //         break;
-    //     case LEXER_TYPE_STRING:
-    //         printf("STRING : %s\n", val.text);
-    //         break;
-    //     default:
-    //         printf("!!!UNKNOWN TYPE!!!: %d\n", type);
-    //         break;
-    //     }
-    // }
-    //
-    SYNTAX_EXPRESSION t = parseExpr();
-    dumpExpr(t, 0);
+    SYNTAX_PROGRAM t = parseProgram();
 
-    printf("%d\n", calcExpr(t));
+    dumpProgram(t, 0);
+
+    // SYNTAX_EXPRESSION t = parseExpr();
+    // dumpExpr(t, 0);
+
+    // printf("%d\n", calcExpr(t));
     return 0;
 }
