@@ -763,24 +763,16 @@ int calcExpr(SYNTAX_EXPRESSION t)
 }
 
 void dumpStatement(SYNTAX_STATEMENT st, int indentcount);
+void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount);
 
-void dumpIf(SYNTAX_IF iff, int indentCount)
+void dumpIf(SYNTAX_IF iff, int indentcount)
 {
     printf("If(Condition: ");
-    dumpExpr(iff.condition, indentCount + 1);
+    dumpExpr(iff.condition, indentcount + 1);
     puts(",");
 
-    indent(indentCount + 1);
-    printf("Statement: [\n");
-
-    for (auto &x : iff.st)
-    {
-        indent(indentCount + 2);
-        dumpStatement(x, indentCount + 2);
-    }
-
-    indent(indentCount);
-    printf("]");
+    dumpStatements(iff.st, indentcount + 1);
+    putchar('\n');
     putchar(')');
 }
 
@@ -788,6 +780,20 @@ void dumpWhile(SYNTAX_WHILE wh, int indentCount)
 {
 }
 
+void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount)
+{
+    indent(indentcount);
+    printf("Statement: [\n");
+
+    for (auto &x : sts)
+    {
+        indent(indentcount + 1);
+        dumpStatement(x, indentcount + 2);
+    }
+
+    indent(indentcount);
+    printf("]");
+}
 void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
 {
     switch (st.type)
