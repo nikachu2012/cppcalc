@@ -117,7 +117,9 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             else
             {
                 pb();
-                val->op = '/';
+                addc('/');
+                addc(0);
+                val->text = buf;
                 return LEXER_TYPE_OPERATOR;
             }
             break;
@@ -153,11 +155,53 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             val->op = c;
             return LEXER_TYPE_RIGHT_BRACKET;
             break;
+        case '<':
+        case '>': {
+            // 次の文字を取得
+            char cc = read();
+
+            if (c == cc)
+            {
+                // 左右シフト演算子
+                addc(c);
+                addc(cc);
+
+                if ((read()) == '=')
+                    addc('=');
+                else
+                    pb();
+
+                addc(0);
+                val->text = buf;
+                return LEXER_TYPE_OPERATOR;
+            }
+            else if (cc == '=')
+            {
+                // 以下、以上
+                addc(c);
+                addc(cc);
+                addc(0);
+                val->text = buf;
+                return LEXER_TYPE_OPERATOR;
+            }
+            else
+            {
+                // 未満、超過
+                pb();
+                addc(c);
+                addc(0);
+                val->text = buf;
+                return LEXER_TYPE_OPERATOR;
+            }
+        }
+        break;
         case '+':
         case '-':
         case '*':
         case '=':
-            val->op = c;
+            addc(c);
+            addc(0);
+            val->text = buf;
             return LEXER_TYPE_OPERATOR;
             break;
         case '"':
@@ -474,19 +518,21 @@ SYNTAX_EXPRESSION parseExpr()
         return lhs;
     }
 
-    if (val.op != '+' && val.op != '-')
+    if (strcmp(val.text, "+") && strcmp(val.text, "-"))
     {
         lexer_pb();
         return lhs;
     }
 
     // 式の右側がある時
-    assert(val.op == '+' || val.op == '-');
+    assert(!strcmp(val.text, "+") || !strcmp(val.text, "-"));
     SYNTAX_EXPRESSION rhs = parseExpr();
 
     SYNTAX_EQUATION *eq = (SYNTAX_EQUATION *)malloc(sizeof(SYNTAX_EQUATION));
     assert(eq != NULL);
-    eq->op = val.op == '+' ? SYNTAX_OPERATOR_ADD : val.op == '-' ? SYNTAX_OPERATOR_SUB : SYNTAX_OPERATOR_EQUAL;
+    eq->op = !strcmp(val.text, "+")   ? SYNTAX_OPERATOR_ADD
+             : !strcmp(val.text, "-") ? SYNTAX_OPERATOR_SUB
+                                      : SYNTAX_OPERATOR_EQUAL;
     eq->l = lhs;
     eq->r = rhs;
     return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
@@ -511,7 +557,7 @@ SYNTAX_EXPRESSION parseTerm()
         return lhs;
     }
 
-    if (val.op != '*' && val.op != '/')
+    if (strcmp(val.text, "*") && strcmp(val.text, "/"))
     {
         lexer_pb();
         return lhs;
@@ -522,7 +568,9 @@ SYNTAX_EXPRESSION parseTerm()
 
     SYNTAX_EQUATION *eq = (SYNTAX_EQUATION *)malloc(sizeof(SYNTAX_EQUATION));
     assert(eq != NULL);
-    eq->op = val.op == '*' ? SYNTAX_OPERATOR_MUL : val.op == '/' ? SYNTAX_OPERATOR_MUL : SYNTAX_OPERATOR_EQUAL;
+    eq->op = !strcmp(val.text, "*")   ? SYNTAX_OPERATOR_MUL
+             : !strcmp(val.text, "/") ? SYNTAX_OPERATOR_SUB
+                                      : SYNTAX_OPERATOR_EQUAL;
     eq->l = lhs;
     eq->r = rhs;
     return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
@@ -603,18 +651,18 @@ SYNTAX_EXPRESSION parseFactor()
             assert(p != NULL);
 
             p->arg = expr;
-            p->name = strdup(temp_name);
+            p->name = temp_name;
 
             return {SYNTAX_TYPE_FUNCTIONCALL, {.fn = p}};
         }
-        else if (type_next == LEXER_TYPE_OPERATOR && val_next.op == '=')
+        else if (type_next == LEXER_TYPE_OPERATOR && !strcmp(val_next.text, "="))
         {
             // 定義済み変数への値書き込み
             // keyword "=" expr
             SYNTAX_EXPRESSION expr = parseExpr();
 
             SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
-            as->dest = strdup(val.text);
+            as->dest = temp_name;
             as->rhs = expr;
             as->type = nullptr;
 
@@ -629,7 +677,7 @@ SYNTAX_EXPRESSION parseFactor()
             LEXER_RESULT val_next_next;
             LEXER_TYPE type_next_next = lexer(&val_next_next);
             assert(type_next_next == LEXER_TYPE_OPERATOR);
-            assert(val_next_next.op == '=');
+            assert(!strcmp(val_next_next.text, "="));
             // エラー出力時にdestを開放する
 
             SYNTAX_EXPRESSION expr = parseExpr();
