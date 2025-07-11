@@ -66,6 +66,7 @@ enum LEXER_TYPE
     LEXER_TYPE_STRING,
     LEXER_TYPE_KEYWORD,
     LEXER_TYPE_OPERATOR,
+    LEXER_TYPE_ASSIGN_OPERATOR,
     LEXER_TYPE_LEFT_BRACKET,
     LEXER_TYPE_RIGHT_BRACKET,
     LEXER_TYPE_SEMICOLON,
@@ -167,10 +168,15 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
                 addc(cc);
 
                 if ((read()) == '=')
+                {
+                    // 左右シフト代入演算子
                     addc('=');
+                    addc(0);
+                    val->text = buf;
+                    return LEXER_TYPE_ASSIGN_OPERATOR;
+                }
                 else
                     pb();
-
                 addc(0);
                 val->text = buf;
                 return LEXER_TYPE_OPERATOR;
@@ -198,11 +204,28 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
         case '+':
         case '-':
         case '*':
+            addc(c);
+
+            if ((read()) == '=')
+            {
+                // 代入演算子
+                addc('=');
+                addc(0);
+                val->text = buf;
+                return LEXER_TYPE_ASSIGN_OPERATOR;
+            }
+            else
+                pb();
+
+            addc(0);
+            val->text = buf;
+            return LEXER_TYPE_OPERATOR;
+            break;
         case '=':
             addc(c);
             addc(0);
             val->text = buf;
-            return LEXER_TYPE_OPERATOR;
+            return LEXER_TYPE_ASSIGN_OPERATOR;
             break;
         case '"':
             // STRING
@@ -244,6 +267,7 @@ enum SYNTAX_TYPE
     SYNTAX_TYPE_IMMEDIATE,
     SYNTAX_TYPE_FUNCTIONCALL,
     SYNTAX_TYPE_ASSIGN,
+    SYNTAX_TYPE_VARIABLE,
 };
 
 enum SYNTAX_IMMEDIATE_TYPE
@@ -261,6 +285,7 @@ struct SYNTAX_IMMEDIATE
 struct SYNTAX_EQUATION;
 struct SYNTAX_FUNCTIONCALL;
 struct SYNTAX_ASSIGN;
+struct SYNTAX_VARIABLE;
 
 struct SYNTAX_EXPRESSION
 {
@@ -270,6 +295,7 @@ struct SYNTAX_EXPRESSION
         SYNTAX_IMMEDIATE *im;
         SYNTAX_FUNCTIONCALL *fn;
         SYNTAX_ASSIGN *as;
+        SYNTAX_VARIABLE *va;
     } data;
 };
 
@@ -286,13 +312,21 @@ struct SYNTAX_FUNCTIONCALL
     SYNTAX_EXPRESSION arg;
 };
 
+struct SYNTAX_VARIABLE
+{
+    char *name;
+};
+
 enum SYNTAX_OPERATOR
 {
+    SYNTAX_OPERATOR_UNDEF = -1,
     SYNTAX_OPERATOR_EQUAL = 0, // =
     SYNTAX_OPERATOR_ADD,       // +
     SYNTAX_OPERATOR_SUB,       // -
     SYNTAX_OPERATOR_MUL,       // *
     SYNTAX_OPERATOR_DIV,       // /
+    SYNTAX_OPERATOR_LSHIFT,    // <<
+    SYNTAX_OPERATOR_RSHIFT,    // >>
 };
 
 struct SYNTAX_EQUATION
@@ -368,6 +402,8 @@ SYNTAX_EXPRESSION parseFactor();
 SYNTAX_PROGRAM parseProgram();
 SYNTAX_FUNC_DEF parseFunctionDefine();
 SYNTAX_STATEMENT parseStatement();
+SYNTAX_OPERATOR parseOperator(char *op);
+
 /*
  * program ::= { statement | function-define }
  */
@@ -655,18 +691,47 @@ SYNTAX_EXPRESSION parseFactor()
 
             return {SYNTAX_TYPE_FUNCTIONCALL, {.fn = p}};
         }
-        else if (type_next == LEXER_TYPE_OPERATOR && !strcmp(val_next.text, "="))
+        else if (type_next == LEXER_TYPE_ASSIGN_OPERATOR)
         {
             // 定義済み変数への値書き込み
             // keyword "=" expr
-            SYNTAX_EXPRESSION expr = parseExpr();
 
-            SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
-            as->dest = temp_name;
-            as->rhs = expr;
-            as->type = nullptr;
+            if (!strcmp(val_next.text, "="))
+            {
+                SYNTAX_EXPRESSION expr = parseExpr();
 
-            return {SYNTAX_TYPE_ASSIGN, {.as = as}};
+                SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
+                as->dest = temp_name;
+                as->rhs = expr;
+                as->type = nullptr;
+
+                return {SYNTAX_TYPE_ASSIGN, {.as = as}};
+            }
+            else
+            {
+                // 演算子付き代入演算子
+                // 最後の=を削除
+                val_next.text[strlen(val_next.text) - 1] = 0;
+                char *op = strdup(val_next.text);
+
+                SYNTAX_EXPRESSION expr = parseExpr();
+
+                SYNTAX_VARIABLE *va = allocate(SYNTAX_VARIABLE, 1);
+                va->name = temp_name;
+
+                SYNTAX_EQUATION *eq = allocate(SYNTAX_EQUATION, 1);
+                eq->l = {SYNTAX_TYPE_VARIABLE, {.va = va}};
+                eq->r = expr;
+                eq->op = parseOperator(op);
+                free(op);
+
+                SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
+                as->dest = temp_name;
+                as->rhs = {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+                as->type = nullptr;
+
+                return {SYNTAX_TYPE_ASSIGN, {.as = as}};
+            }
         }
         else if (type_next == LEXER_TYPE_KEYWORD)
         {
@@ -676,7 +741,7 @@ SYNTAX_EXPRESSION parseFactor()
 
             LEXER_RESULT val_next_next;
             LEXER_TYPE type_next_next = lexer(&val_next_next);
-            assert(type_next_next == LEXER_TYPE_OPERATOR);
+            assert(type_next_next == LEXER_TYPE_ASSIGN_OPERATOR);
             assert(!strcmp(val_next_next.text, "="));
             // エラー出力時にdestを開放する
 
@@ -702,6 +767,39 @@ SYNTAX_EXPRESSION parseFactor()
     }
 
     return {};
+}
+
+SYNTAX_OPERATOR parseOperator(char *op)
+{
+    if (!strcmp(op, "="))
+    {
+        return SYNTAX_OPERATOR_EQUAL;
+    }
+    else if (!strcmp(op, "+"))
+    {
+        return SYNTAX_OPERATOR_ADD;
+    }
+    else if (!strcmp(op, "-"))
+    {
+        return SYNTAX_OPERATOR_SUB;
+    }
+    else if (!strcmp(op, "*"))
+    {
+        return SYNTAX_OPERATOR_MUL;
+    }
+    else if (!strcmp(op, "/"))
+    {
+        return SYNTAX_OPERATOR_DIV;
+    }
+    else if (!strcmp(op, "<<"))
+    {
+        return SYNTAX_OPERATOR_LSHIFT;
+    }
+    else if (!strcmp(op, ">>"))
+    {
+        return SYNTAX_OPERATOR_RSHIFT;
+    }
+    return SYNTAX_OPERATOR_UNDEF;
 }
 
 constexpr void indent(int count)
@@ -747,6 +845,10 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
 
         indent(indentcount);
         putchar(')');
+    }
+    else if (t.type == SYNTAX_TYPE_VARIABLE)
+    {
+        printf("Variable(name:%s)", t.data.va->name);
     }
     else
     {
@@ -881,7 +983,7 @@ void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
 }
 int main(void)
 {
-    std::string target = "/**/if 11451+4 {func(11+451*4); int c = 10;(1145+14)*1919;}114+5+14;114*5+14;";
+    std::string target = "/**/if 11451+4 {func(11+451*4); int c = 10;c += 10;(1145+14)*1919;}114+5+14;114*5+14;";
     t = target.c_str();
 
     SYNTAX_PROGRAM t = parseProgram();
