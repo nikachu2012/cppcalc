@@ -835,7 +835,7 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
     }
     else if (t.type == SYNTAX_TYPE_ASSIGN)
     {
-        printf("Assign(type: %s, dest: %s\n", t.data.as->type != nullptr ? "" : t.data.as->type, t.data.as->dest);
+        printf("Assign(type: %s, dest: %s\n", t.data.as->type == nullptr ? "(nullptr)" : t.data.as->type, t.data.as->dest);
 
         indent(indentcount + 1);
         printf("rhs: ");
