@@ -359,7 +359,8 @@ struct SYNTAX_STATEMENT
 struct SYNTAX_IF
 {
     SYNTAX_EXPRESSION condition;
-    std::vector<SYNTAX_STATEMENT> st;
+    std::vector<SYNTAX_STATEMENT> stmt;
+    std::vector<SYNTAX_STATEMENT> else_stmt;
 };
 
 struct SYNTAX_WHILE
@@ -491,11 +492,29 @@ SYNTAX_STATEMENT parseStatement()
         // if
         SYNTAX_EXPRESSION ex = parseExpr();
 
-        auto block = parseBlock();
+        std::vector<SYNTAX_STATEMENT> block = parseBlock();
+
+        // elseが続くか確認
+        LEXER_RESULT val_next;
+        LEXER_TYPE type_next = lexer(&val_next);
+        if (type_next != LEXER_TYPE_KEYWORD || strcmp(val_next.text, "else"))
+        {
+            lexer_pb();
+
+            SYNTAX_IF *iff = allocate(SYNTAX_IF, 1);
+            iff->condition = ex;
+            iff->stmt = block;
+            iff->else_stmt = std::vector<SYNTAX_STATEMENT>();
+
+            return {SYNTAX_STMT_IF, {.iff = iff}};
+        }
+
+        std::vector<SYNTAX_STATEMENT> else_block = parseBlock();
 
         SYNTAX_IF *iff = allocate(SYNTAX_IF, 1);
         iff->condition = ex;
-        iff->st = block;
+        iff->stmt = block;
+        iff->else_stmt = else_block;
 
         return {SYNTAX_STMT_IF, {.iff = iff}};
     }
@@ -836,7 +855,8 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
     }
     else if (t.type == SYNTAX_TYPE_ASSIGN)
     {
-        printf("Assign(type: %s, dest: %s\n", t.data.as->type == nullptr ? "(nullptr)" : t.data.as->type, t.data.as->dest);
+        printf("Assign(type: %s, dest: %s\n", t.data.as->type == nullptr ? "(nullptr)" : t.data.as->type,
+               t.data.as->dest);
 
         indent(indentcount + 1);
         printf("rhs: ");
@@ -922,18 +942,25 @@ void dumpIf(SYNTAX_IF iff, int indentcount)
     dumpExpr(iff.condition, indentcount + 1);
     puts(",");
 
-    dumpStatements(iff.st, indentcount + 1);
-    putchar('\n');
+    indent(indentcount+1);
+    printf("statement: ");
+    dumpStatements(iff.stmt, indentcount + 1);
+
+    puts(",");
+    indent(indentcount+1);
+    printf("else-statement:");
+    dumpStatements(iff.else_stmt, indentcount + 1);
+
     putchar(')');
 }
 
 void dumpWhile(SYNTAX_WHILE wh, int indentCount)
 {
+    assert(false);
 }
 
 void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount)
 {
-    indent(indentcount);
     printf("Statement: [\n");
 
     for (auto &x : sts)
