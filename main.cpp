@@ -11,7 +11,7 @@
 char buf[BUFFERSIZ];
 size_t bufindex = 0;
 
-const char *t;
+FILE *f = NULL;
 
 #define allocate(type, count) (type *)malloc(sizeof(type) * count)
 
@@ -28,12 +28,12 @@ void resetbuf()
 
 char read()
 {
-    return *(t++);
+    return fgetc(f);
 }
 
 void pb()
 {
-    t--;
+    fseek(f, -1, SEEK_CUR);
 }
 
 int isdecimal(char c)
@@ -72,19 +72,20 @@ enum LEXER_TYPE
     LEXER_TYPE_SEMICOLON,
 };
 
-const char *prev_target;
+long int prev_target;
 
 void lexer_pb()
 {
-    t = prev_target;
+    // t = prev_target;
+    fseek(f, prev_target, SEEK_SET);
 }
 
 LEXER_TYPE lexer(LEXER_RESULT *val)
 {
     char c;
-    prev_target = t;
+    prev_target = ftell(f);
     resetbuf();
-    while ((c = read()))
+    while ((c = read()) != EOF)
     {
         switch (c)
         {
@@ -983,8 +984,10 @@ void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
 }
 int main(void)
 {
-    std::string target = "/**/if 11451+4 {func(11+451*4); int c = 10;c += 10;(1145+14)*1919;}114+5+14;114*5+14;";
-    t = target.c_str();
+    f = fopen("source.kano", "r");
+    assert(f != NULL);
+    // std::string target = "/**/if 11451+4 {func(11+451*4); int c = 10;c += 10;(1145+14)*1919;}114+5+14;114*5+14;";
+    // t = target.c_str();
 
     SYNTAX_PROGRAM t = parseProgram();
 
@@ -994,5 +997,6 @@ int main(void)
     // dumpExpr(t, 0);
 
     // printf("%d\n", calcExpr(t));
+    fclose(f);
     return 0;
 }
