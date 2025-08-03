@@ -15,7 +15,7 @@ FILE *f = NULL;
 
 #define allocate(type, count) (type *)malloc(sizeof(type) * count)
 
-void addc(char c)
+inline void addc(char c)
 {
     buf[bufindex] = c;
     bufindex++;
@@ -70,6 +70,8 @@ enum LEXER_TYPE
     LEXER_TYPE_LEFT_BRACKET,
     LEXER_TYPE_RIGHT_BRACKET,
     LEXER_TYPE_SEMICOLON,
+    LEXER_TYPE_COMMA,
+    LEXER_TYPE_RIGHTARROW,
 };
 
 long int prev_target;
@@ -203,7 +205,6 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
         }
         break;
         case '+':
-        case '-':
         case '*':
             addc(c);
 
@@ -218,6 +219,21 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             else
                 pb();
 
+            addc(0);
+            val->text = buf;
+            return LEXER_TYPE_OPERATOR;
+            break;
+        case '-':
+            if ((read()) == '>')
+            {
+                // 右向きアロー演算子
+                // addc('-');
+                // addc('>');
+                // addc(0);
+                // val->text = buf;
+                return LEXER_TYPE_RIGHTARROW;
+            }
+            addc(c);
             addc(0);
             val->text = buf;
             return LEXER_TYPE_OPERATOR;
@@ -251,6 +267,9 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             addc(0);
             val->text = buf;
             return LEXER_TYPE_STRING;
+            break;
+        case ',':
+            return LEXER_TYPE_COMMA;
             break;
         case ';':
             return LEXER_TYPE_SEMICOLON;
@@ -392,11 +411,17 @@ struct SYNTAX_WHILE
     std::vector<SYNTAX_STATEMENT> st;
 };
 
+struct ARGUMENT_LIST
+{
+    char *type;
+    char *name;
+};
+
 struct SYNTAX_FUNC_DEF
 {
     char *name;
-    void *args;
-    char *returnType;
+    std::vector<ARGUMENT_LIST> args;
+    char *retType;
     std::vector<SYNTAX_STATEMENT> st;
 };
 
@@ -494,11 +519,71 @@ std::vector<SYNTAX_STATEMENT> parseBlock()
     return res;
 }
 /*
- * function-define ::= "fn" keyword "(" argument ")" "->" keyword block
+ * function-define ::= "fn" keyword "(" argument-list [, argument-list]* ")" "->" keyword block
+ * argument-list ::= keyword keyword
  */
 SYNTAX_FUNC_DEF parseFunctionDefine()
 {
-    return {};
+    LEXER_RESULT val;
+    LEXER_TYPE type;
+    type = lexer(&val);
+    assert(type == LEXER_TYPE_KEYWORD && !strcmp(val.text, "fn"));
+
+    type = lexer(&val);
+    assert(type == LEXER_TYPE_KEYWORD);
+    char *name = strdup(val.text);
+
+    type = lexer(&val);
+    assert(type == LEXER_TYPE_LEFT_BRACKET && val.op == '(');
+
+    std::vector<ARGUMENT_LIST> args;
+
+    // parse argument-list
+    while (1)
+    {
+        LEXER_RESULT val;
+        LEXER_TYPE type;
+
+        // parse type
+        type = lexer(&val);
+        assert(type == LEXER_TYPE_KEYWORD);
+        char *argType = strdup(val.text);
+
+        // parse name
+        type = lexer(&val);
+        assert(type == LEXER_TYPE_KEYWORD);
+        char *argName = strdup(val.text);
+
+        args.push_back({argType, argName});
+
+        type = lexer(&val);
+        if (type == LEXER_TYPE_COMMA)
+        {
+            continue;
+        }
+        else
+        {
+            lexer_pb();
+            break;
+        }
+    }
+
+    type = lexer(&val);
+    assert(type == LEXER_TYPE_RIGHT_BRACKET && val.op == ')');
+
+    // parse ->
+    type = lexer(&val);
+    assert(type == LEXER_TYPE_RIGHTARROW);
+
+    // parse return type
+    type = lexer(&val);
+    assert(type == LEXER_TYPE_KEYWORD);
+    char *retType = strdup(val.text);
+
+    // parse block
+    auto st = parseBlock();
+
+    return {name, args, retType, st};
 }
 /*
  * statement ::= expr ";"
@@ -1077,6 +1162,36 @@ void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
     }
 }
 
+void dumpFunctionDef(SYNTAX_FUNC_DEF func, int indentcount)
+{
+    puts("FunctionDef(");
+
+    indent(indentcount + 1);
+    printf("name: %s\n", func.name);
+
+    indent(indentcount + 1);
+    printf("retType: %s\n", func.retType);
+
+    // print argument-list
+    indent(indentcount + 1);
+    puts("args: [");
+    for (auto &x : func.args)
+    {
+        indent(indentcount + 2);
+        printf("Arg(type: %s, name: %s)\n", x.type, x.name);
+    }
+    indent(indentcount + 1);
+    puts("]");
+
+    indent(indentcount + 1);
+    printf("statements: ");
+    dumpStatements(func.st, indentcount + 1);
+    
+    putchar('\n');
+    indent(indentcount);
+    puts(")");
+}
+
 void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
 {
     for (auto &x : pro.e)
@@ -1087,8 +1202,8 @@ void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
         }
         else if (x.type == SYNTAX_FUNCTION_DEF)
         {
-            puts("Functiondef");
-            // dumpFunctionDef(x.data.fn);
+            // puts("Functiondef");
+            dumpFunctionDef(*x.data.fn, indentcount);
         }
     }
 }
