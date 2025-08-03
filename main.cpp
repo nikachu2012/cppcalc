@@ -223,6 +223,19 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             return LEXER_TYPE_OPERATOR;
             break;
         case '=':
+            if ((read()) == '=')
+            {
+                // ==の時
+                // 代入演算子
+                addc('=');
+                addc('=');
+                addc(0);
+                val->text = buf;
+                return LEXER_TYPE_OPERATOR;
+            }
+            else
+                pb();
+
             addc(c);
             addc(0);
             val->text = buf;
@@ -322,12 +335,22 @@ enum SYNTAX_OPERATOR
 {
     SYNTAX_OPERATOR_UNDEF = -1,
     SYNTAX_OPERATOR_EQUAL = 0, // =
-    SYNTAX_OPERATOR_ADD,       // +
-    SYNTAX_OPERATOR_SUB,       // -
-    SYNTAX_OPERATOR_MUL,       // *
-    SYNTAX_OPERATOR_DIV,       // /
-    SYNTAX_OPERATOR_LSHIFT,    // <<
-    SYNTAX_OPERATOR_RSHIFT,    // >>
+    // MATH
+    SYNTAX_OPERATOR_ADD, // +
+    SYNTAX_OPERATOR_SUB, // -
+    SYNTAX_OPERATOR_MUL, // *
+    SYNTAX_OPERATOR_DIV, // /
+    SYNTAX_OPERATOR_REM, // %
+    // BIT
+    SYNTAX_OPERATOR_LSHIFT, // <<
+    SYNTAX_OPERATOR_RSHIFT, // >>
+    // CONDITION
+    SYNTAX_OPERATOR_GREATER_THAN,    // >
+    SYNTAX_OPERATOR_GREATER_THAN_EQ, // >=
+    SYNTAX_OPERATOR_LESS_THAN,       // <
+    SYNTAX_OPERATOR_LESS_THAN_EQ,    // <=
+    SYNTAX_OPERATOR_EQ,              // ==
+    SYNTAX_OPERATOR_NEQ,             // !=
 };
 
 struct SYNTAX_EQUATION
@@ -399,6 +422,7 @@ struct SYNTAX_PROGRAM
 
 // Prototype Declare
 SYNTAX_EXPRESSION parseExpr();
+SYNTAX_EXPRESSION parseExpr2();
 SYNTAX_EXPRESSION parseTerm();
 SYNTAX_EXPRESSION parseFactor();
 SYNTAX_PROGRAM parseProgram();
@@ -551,16 +575,74 @@ SYNTAX_STATEMENT parseStatement()
     }
 }
 /*
- * condition ::= expr "<=" expr
- *             | expr "==" expr
- *             | とか色々
+ * expr ::= expr2
+ *        | expr2 "<" expr2
+ *        | expr2 ">" expr2
+ *        | expr2 "<=" expr2
+ *        | expr2 ">=" expr2
+ *        | expr2 "==" expr2
+ *        | expr2 "!=" expr2
  */
+SYNTAX_EXPRESSION parseExpr()
+{
+    SYNTAX_EXPRESSION lhs = parseExpr2();
+
+    // termの次をチェック
+    LEXER_RESULT val;
+    LEXER_TYPE type = lexer(&val);
+
+    if (type != LEXER_TYPE_OPERATOR)
+    {
+        lexer_pb();
+        return lhs;
+    }
+
+    SYNTAX_OPERATOR temp_op;
+    if (!strcmp(val.text, ">"))
+    {
+        temp_op = SYNTAX_OPERATOR_GREATER_THAN;
+    }
+    else if (!strcmp(val.text, ">="))
+    {
+        temp_op = SYNTAX_OPERATOR_GREATER_THAN_EQ;
+    }
+    else if (!strcmp(val.text, "<"))
+    {
+        temp_op = SYNTAX_OPERATOR_LESS_THAN;
+    }
+    else if (!strcmp(val.text, "<="))
+    {
+        temp_op = SYNTAX_OPERATOR_LESS_THAN_EQ;
+    }
+    else if (!strcmp(val.text, "=="))
+    {
+        temp_op = SYNTAX_OPERATOR_EQ;
+    }
+    else if (!strcmp(val.text, "!="))
+    {
+        temp_op = SYNTAX_OPERATOR_NEQ;
+    }
+    else
+    {
+        lexer_pb();
+        return lhs;
+    }
+
+    // 式の右側がある時
+    SYNTAX_EXPRESSION rhs = parseExpr2();
+    SYNTAX_EQUATION *eq = (SYNTAX_EQUATION *)malloc(sizeof(SYNTAX_EQUATION));
+    assert(eq != NULL);
+    eq->op = temp_op;
+    eq->l = lhs;
+    eq->r = rhs;
+    return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+}
 /*
- * expr ::= term
+ * expr2 ::= term
  *        | term ["+" term]*
  *        | term ["-" term]*
  */
-SYNTAX_EXPRESSION parseExpr()
+SYNTAX_EXPRESSION parseExpr2()
 {
     SYNTAX_EXPRESSION lhs = parseTerm();
 
