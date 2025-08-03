@@ -829,6 +829,8 @@ constexpr void indent(int count)
 }
 void dumpExpr(SYNTAX_EXPRESSION t, int indentcount);
 void dumpEquation(SYNTAX_EQUATION eq, int indentcount);
+void dumpStatement(SYNTAX_STATEMENT st, int indentcount);
+void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount);
 
 void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
 {
@@ -933,24 +935,23 @@ int calcExpr(SYNTAX_EXPRESSION t)
     }
 }
 
-void dumpStatement(SYNTAX_STATEMENT st, int indentcount);
-void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount);
-
 void dumpIf(SYNTAX_IF iff, int indentcount)
 {
     printf("If(Condition: ");
     dumpExpr(iff.condition, indentcount + 1);
     puts(",");
 
-    indent(indentcount+1);
+    indent(indentcount + 1);
     printf("statement: ");
     dumpStatements(iff.stmt, indentcount + 1);
 
     puts(",");
-    indent(indentcount+1);
+    indent(indentcount + 1);
     printf("else-statement:");
     dumpStatements(iff.else_stmt, indentcount + 1);
-
+    
+    putchar('\n');
+    indent(indentcount);
     putchar(')');
 }
 
@@ -970,7 +971,7 @@ void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount)
     }
 
     indent(indentcount);
-    printf("]");
+    putchar(']');
 }
 void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
 {
