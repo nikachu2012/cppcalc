@@ -13,7 +13,7 @@ size_t bufindex = 0;
 
 FILE *f = NULL;
 
-#define allocate(type, count) (type *)malloc(sizeof(type) * count)
+// #define allocate(type, count) (type *)malloc(sizeof(type) * count)
 
 inline void addc(char c)
 {
@@ -480,14 +480,14 @@ SYNTAX_PROGRAM parseProgram()
         if (type == LEXER_TYPE_KEYWORD && !strcmp(val.text, "fn"))
         {
             // function define
-            auto fn = allocate(SYNTAX_FUNC_DEF, 1);
+            auto fn = new SYNTAX_FUNC_DEF;
             *fn = parseFunctionDefine();
 
             prg.push_back({SYNTAX_FUNCTION_DEF, {.fn = fn}});
         }
         else
         {
-            auto st = allocate(SYNTAX_STATEMENT, 1);
+            auto st = new SYNTAX_STATEMENT;
             *st = parseStatement();
 
             prg.push_back({SYNTAX_PRG_STATEMENT, {.st = st}});
@@ -616,7 +616,7 @@ SYNTAX_STATEMENT parseStatement()
         {
             lexer_pb();
 
-            SYNTAX_IF *iff = allocate(SYNTAX_IF, 1);
+            SYNTAX_IF *iff = new SYNTAX_IF;
             iff->condition = ex;
             iff->stmt = block;
             iff->else_stmt = std::vector<SYNTAX_STATEMENT>();
@@ -721,7 +721,7 @@ SYNTAX_EXPRESSION parseExpr()
 
     // 式の右側がある時
     SYNTAX_EXPRESSION rhs = parseExpr2();
-    SYNTAX_EQUATION *eq = (SYNTAX_EQUATION *)malloc(sizeof(SYNTAX_EQUATION));
+    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
     assert(eq != NULL);
     eq->op = temp_op;
     eq->l = lhs;
@@ -757,7 +757,7 @@ SYNTAX_EXPRESSION parseExpr2()
     assert(!strcmp(val.text, "+") || !strcmp(val.text, "-"));
     SYNTAX_EXPRESSION rhs = parseExpr();
 
-    SYNTAX_EQUATION *eq = (SYNTAX_EQUATION *)malloc(sizeof(SYNTAX_EQUATION));
+    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
     assert(eq != NULL);
     eq->op = !strcmp(val.text, "+")   ? SYNTAX_OPERATOR_ADD
              : !strcmp(val.text, "-") ? SYNTAX_OPERATOR_SUB
@@ -809,7 +809,7 @@ SYNTAX_EXPRESSION parseTerm()
     // 式の右側がある時
     SYNTAX_EXPRESSION rhs = parseTerm();
 
-    SYNTAX_EQUATION *eq = (SYNTAX_EQUATION *)malloc(sizeof(SYNTAX_EQUATION));
+    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
     assert(eq != NULL);
     eq->op = op;
     eq->l = lhs;
@@ -831,7 +831,7 @@ SYNTAX_EXPRESSION parseFactor()
     switch (type)
     {
     case LEXER_TYPE_INTEGER: {
-        SYNTAX_IMMEDIATE *p = (SYNTAX_IMMEDIATE *)malloc(sizeof(SYNTAX_IMMEDIATE));
+        SYNTAX_IMMEDIATE *p = new SYNTAX_IMMEDIATE;
         assert(p != NULL);
 
         char *data = strdup(val.text);
@@ -843,7 +843,7 @@ SYNTAX_EXPRESSION parseFactor()
         break;
     }
     case LEXER_TYPE_FLOAT: {
-        SYNTAX_IMMEDIATE *p = (SYNTAX_IMMEDIATE *)malloc(sizeof(SYNTAX_IMMEDIATE));
+        SYNTAX_IMMEDIATE *p = new SYNTAX_IMMEDIATE;
         assert(p != NULL);
 
         char *data = strdup(val.text);
@@ -923,7 +923,7 @@ SYNTAX_EXPRESSION parseFactor()
             {
                 SYNTAX_EXPRESSION expr = parseExpr();
 
-                SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
+                SYNTAX_ASSIGN *as = new SYNTAX_ASSIGN;
                 as->dest = temp_name;
                 as->rhs = expr;
                 as->type = nullptr;
@@ -939,16 +939,16 @@ SYNTAX_EXPRESSION parseFactor()
 
                 SYNTAX_EXPRESSION expr = parseExpr();
 
-                SYNTAX_VARIABLE *va = allocate(SYNTAX_VARIABLE, 1);
+                SYNTAX_VARIABLE *va = new SYNTAX_VARIABLE;
                 va->name = temp_name;
 
-                SYNTAX_EQUATION *eq = allocate(SYNTAX_EQUATION, 1);
+                SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
                 eq->l = {SYNTAX_TYPE_VARIABLE, {.va = va}};
                 eq->r = expr;
                 eq->op = parseOperator(op);
                 free(op);
 
-                SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
+                SYNTAX_ASSIGN *as = new SYNTAX_ASSIGN;
                 as->dest = temp_name;
                 as->rhs = {SYNTAX_TYPE_EQUATION, {.eq = eq}};
                 as->type = nullptr;
@@ -970,7 +970,7 @@ SYNTAX_EXPRESSION parseFactor()
 
             SYNTAX_EXPRESSION expr = parseExpr();
 
-            SYNTAX_ASSIGN *as = allocate(SYNTAX_ASSIGN, 1);
+            SYNTAX_ASSIGN *as = new SYNTAX_ASSIGN;
             as->dest = dest;
             as->rhs = expr;
             as->type = temp_name;
