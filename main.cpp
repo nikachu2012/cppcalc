@@ -342,7 +342,7 @@ struct SYNTAX_ASSIGN
 struct SYNTAX_FUNCTIONCALL
 {
     char *name;
-    SYNTAX_EXPRESSION arg;
+    std::vector<SYNTAX_EXPRESSION> args;
 };
 
 struct SYNTAX_VARIABLE
@@ -620,7 +620,7 @@ SYNTAX_STATEMENT parseStatement()
 
         std::vector<SYNTAX_STATEMENT> else_block = parseBlock();
 
-        SYNTAX_IF *iff = allocate(SYNTAX_IF, 1);
+        SYNTAX_IF *iff = new SYNTAX_IF;
         iff->condition = ex;
         iff->stmt = block;
         iff->else_stmt = else_block;
@@ -634,7 +634,7 @@ SYNTAX_STATEMENT parseStatement()
 
         auto block = parseBlock();
 
-        SYNTAX_WHILE *wh = allocate(SYNTAX_WHILE, 1);
+        SYNTAX_WHILE *wh = new SYNTAX_WHILE;
         wh->condition = ex;
         wh->st = block;
 
@@ -644,7 +644,7 @@ SYNTAX_STATEMENT parseStatement()
     {
         lexer_pb();
 
-        SYNTAX_EXPRESSION *ex = allocate(SYNTAX_EXPRESSION, 1);
+        SYNTAX_EXPRESSION *ex = new SYNTAX_EXPRESSION;
         *ex = parseExpr();
 
         LEXER_TYPE type = lexer(&val);
@@ -802,7 +802,7 @@ SYNTAX_EXPRESSION parseTerm()
 /*
  * factor ::= digit
  *          | keyword
- *          | keyword "(" expr ")"
+ *          | keyword "(" expr [, expr]* ")"
  *          | keyword = expr
  *          | "(" expr ")"
  */
@@ -860,20 +860,38 @@ SYNTAX_EXPRESSION parseFactor()
         if (type_next == LEXER_TYPE_LEFT_BRACKET)
         {
             // 関数呼び出し
-            // keyword "(" expr ")"
+            // keyword "(" expr [, expr]* ")"
             assert(val_next.op == '(');
-            SYNTAX_EXPRESSION expr = parseExpr();
+
+            SYNTAX_FUNCTIONCALL *p = new SYNTAX_FUNCTIONCALL;
+            assert(p != NULL);
+
+            std::vector<SYNTAX_EXPRESSION> t;
+            while (1)
+            {
+                SYNTAX_EXPRESSION arg = parseExpr();
+                t.push_back(arg);
+
+                LEXER_RESULT val;
+                LEXER_TYPE type = lexer(&val);
+                if (type == LEXER_TYPE_COMMA)
+                {
+                    continue;
+                }
+                else
+                {
+                    lexer_pb();
+                    break;
+                }
+            }
 
             LEXER_RESULT val_next_next;
             LEXER_TYPE type_next_next = lexer(&val_next_next);
             assert(type_next_next == LEXER_TYPE_RIGHT_BRACKET);
             assert(val_next_next.op == ')');
 
-            // 戻り値の準備
-            SYNTAX_FUNCTIONCALL *p = (SYNTAX_FUNCTIONCALL *)malloc(sizeof(SYNTAX_FUNCTIONCALL));
-            assert(p != NULL);
-
-            p->arg = expr;
+            // 構造体内のvectorへコピー
+            p->args = t;
             p->name = temp_name;
 
             return {SYNTAX_TYPE_FUNCTIONCALL, {.fn = p}};
@@ -1014,10 +1032,18 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
         printf("FuncionCall(name: %s\n", t.data.fn->name);
 
         indent(indentcount + 1);
-        printf("Argument: ");
+        puts("Arguments: [");
 
-        dumpExpr(t.data.fn->arg, indentcount + 1);
-        putchar('\n');
+        // indent(indentcount + 1);
+        // puts("args: [");
+        for (auto &x : t.data.fn->args)
+        {
+            indent(indentcount + 2);
+            dumpExpr(x, indentcount + 2);
+            puts(",");
+        }
+        indent(indentcount + 1);
+        puts("]");
 
         indent(indentcount);
         putchar(')');
@@ -1116,7 +1142,7 @@ void dumpIf(SYNTAX_IF iff, int indentcount)
     indent(indentcount + 1);
     printf("else-statement:");
     dumpStatements(iff.else_stmt, indentcount + 1);
-    
+
     putchar('\n');
     indent(indentcount);
     putchar(')');
@@ -1186,7 +1212,7 @@ void dumpFunctionDef(SYNTAX_FUNC_DEF func, int indentcount)
     indent(indentcount + 1);
     printf("statements: ");
     dumpStatements(func.st, indentcount + 1);
-    
+
     putchar('\n');
     indent(indentcount);
     puts(")");
