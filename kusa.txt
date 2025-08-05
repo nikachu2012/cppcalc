@@ -3,7 +3,7 @@ FunctionDef(
   retType: int
   args: [
     Arg(type: int, name: argc)
-    Arg(type: charAA, name: argv)
+    Arg(type: ptr, name: argv)
   ]
   statements: Statement: [
   ]
@@ -13,36 +13,48 @@ If(Condition: Equation(Operator: 12,
     Right: Immediate(Type: 0, Data: 4)
   ),
   statement: Statement: [
-    FuncionCall(name: func
-        Arguments: [
-          Equation(Operator: 0, 
-            Left : Immediate(Type: 0, Data: 11)
-            Right: Equation(Operator: 0, 
-              Left : Immediate(Type: 0, Data: 451)
-              Right: Immediate(Type: 0, Data: 4)
-            )
-          ),
-        ]
-      )
+    FuncionCall(name: func,
+      Arguments: [
+        Equation(Operator: 0, 
+          Left : Immediate(Type: 0, Data: 11)
+          Right: Equation(Operator: 3, 
+            Left : Immediate(Type: 0, Data: 451)
+            Right: Immediate(Type: 0, Data: 4)
+          )
+        ),
+      ]
+    )
     If(Condition: Immediate(Type: 0, Data: 114514),
-        statement: Statement: [
-          FuncionCall(name: func
-              Arguments: [
-                Equation(Operator: 0, 
-                  Left : Immediate(Type: 0, Data: 11)
-                  Right: Equation(Operator: 0, 
-                    Left : Immediate(Type: 0, Data: 451)
-                    Right: Immediate(Type: 0, Data: 4)
-                  )
-                ),
-              ]
-            )
-        ],
-        else-statement:Statement: [
-        ]
-      )
+      statement: Statement: [
+        FuncionCall(name: func,
+          Arguments: [
+            Equation(Operator: 0, 
+              Left : Immediate(Type: 0, Data: 11)
+              Right: Equation(Operator: 3, 
+                Left : Immediate(Type: 0, Data: 451)
+                Right: Equation(Operator: 5, 
+                  Left : Immediate(Type: 0, Data: 4)
+                  Right: Immediate(Type: 0, Data: 5)
+                )
+              )
+            ),
+          ]
+        )
+      ],
+      else-statement:Statement: [
+      ]
+    )
   ],
   else-statement:Statement: [
+  ]
+)
+While(Condition: Immediate(Type: 0, Data: 1),
+  statement: Statement: [
+    FuncionCall(name: func,
+      Arguments: [
+        Immediate(Type: 0, Data: 1),
+      ]
+    )
   ]
 )
 If(Condition: Equation(Operator: 0, 
@@ -59,43 +71,43 @@ If(Condition: Equation(Operator: 0,
     Right: Immediate(Type: 0, Data: 4)
   ),
   statement: Statement: [
-    FuncionCall(name: func
-        Arguments: [
-          Equation(Operator: 0, 
-            Left : Immediate(Type: 0, Data: 11)
-            Right: Equation(Operator: 0, 
-              Left : Immediate(Type: 0, Data: 451)
-              Right: Immediate(Type: 0, Data: 4)
-            )
-          ),
-          Immediate(Type: 0, Data: 1919),
-          Immediate(Type: 0, Data: 810),
-        ]
-      )
-    FuncionCall(name: func
-        Arguments: [
-          Equation(Operator: 0, 
-            Left : Immediate(Type: 0, Data: 11)
-            Right: Equation(Operator: 0, 
-              Left : Immediate(Type: 0, Data: 451)
-              Right: Immediate(Type: 0, Data: 4)
-            )
-          ),
-        ]
-      )
+    FuncionCall(name: func,
+      Arguments: [
+        Equation(Operator: 0, 
+          Left : Immediate(Type: 0, Data: 11)
+          Right: Equation(Operator: 3, 
+            Left : Immediate(Type: 0, Data: 451)
+            Right: Immediate(Type: 0, Data: 4)
+          )
+        ),
+        Immediate(Type: 0, Data: 1919),
+        Immediate(Type: 0, Data: 810),
+      ]
+    )
+    FuncionCall(name: func,
+      Arguments: [
+        Equation(Operator: 0, 
+          Left : Immediate(Type: 0, Data: 11)
+          Right: Equation(Operator: 3, 
+            Left : Immediate(Type: 0, Data: 451)
+            Right: Immediate(Type: 0, Data: 4)
+          )
+        ),
+      ]
+    )
   ],
   else-statement:Statement: [
-    FuncionCall(name: func
-        Arguments: [
-          Equation(Operator: 0, 
-            Left : Immediate(Type: 0, Data: 11)
-            Right: Equation(Operator: 0, 
-              Left : Immediate(Type: 0, Data: 451)
-              Right: Immediate(Type: 0, Data: 4)
-            )
-          ),
-        ]
-      )
+    FuncionCall(name: func,
+      Arguments: [
+        Equation(Operator: 0, 
+          Left : Immediate(Type: 0, Data: 11)
+          Right: Equation(Operator: 3, 
+            Left : Immediate(Type: 0, Data: 451)
+            Right: Immediate(Type: 0, Data: 4)
+          )
+        ),
+      ]
+    )
   ]
 )
 Assign(type: int, dest: a
@@ -108,7 +120,7 @@ Assign(type: int, dest: a
   )
 )
 Equation(Operator: 12, 
-  Left : Equation(Operator: 0, 
+  Left : Equation(Operator: 3, 
     Left : Immediate(Type: 0, Data: 114)
     Right: Immediate(Type: 0, Data: 5)
   )

@@ -5,7 +5,7 @@ SRCS = $(wildcard *.cpp **/*.cpp)
 OBJS = $(patsubst %.cpp, %.o, $(SRCS))
 DEPS = $(patsubst %.cpp, %.d, $(SRCS))
 
-CXXFLAGS += -Wall
+CXXFLAGS += -Wall -g
 
 .PHONY: all
 all: $(TARGET)

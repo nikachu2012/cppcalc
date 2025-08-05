@@ -1,12 +1,15 @@
-fn main(int argc, charAA argv) -> int {
+fn main(int argc, ptr argv) -> int {
 
 }
 if 11451 == 4 {
     func(11+451*4);
     if 114514 {
-        func(11+451*4);
+        func(11+451*4 % 5);
     }
 } 
+while 1 {
+    func(1);
+}
 if 11451+4 { } 
 if 11451+4 {
     func(11+451*4, 1919, 810);
