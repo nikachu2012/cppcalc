@@ -795,7 +795,7 @@ SYNTAX_EXPRESSION parseTerm()
     else if (!strcmp(val.text, "/"))
     {
         op = SYNTAX_OPERATOR_DIV;
-    }   
+    }
     else if (!strcmp(val.text, "%"))
     {
         op = SYNTAX_OPERATOR_REM;
@@ -1047,7 +1047,7 @@ void dumpExpr(SYNTAX_EXPRESSION t, int indentcount)
     }
     else if (t.type == SYNTAX_TYPE_FUNCTIONCALL)
     {
-        printf("FuncionCall(name: %s\n", t.data.fn->name);
+        printf("FuncionCall(name: %s,\n", t.data.fn->name);
 
         indent(indentcount + 1);
         puts("Arguments: [");
@@ -1178,7 +1178,7 @@ void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount)
     for (auto &x : sts)
     {
         indent(indentcount + 1);
-        dumpStatement(x, indentcount + 2);
+        dumpStatement(x, indentcount + 1);
     }
 
     indent(indentcount);
