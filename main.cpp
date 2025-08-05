@@ -1166,9 +1166,19 @@ void dumpIf(SYNTAX_IF iff, int indentcount)
     putchar(')');
 }
 
-void dumpWhile(SYNTAX_WHILE wh, int indentCount)
+void dumpWhile(SYNTAX_WHILE wh, int indentcount)
 {
-    assert(false);
+    printf("While(Condition: ");
+    dumpExpr(wh.condition, indentcount + 1);
+    puts(",");
+
+    indent(indentcount + 1);
+    printf("statement: ");
+    dumpStatements(wh.st, indentcount + 1);
+
+    putchar('\n');
+    indent(indentcount);
+    putchar(')');
 }
 
 void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount)
