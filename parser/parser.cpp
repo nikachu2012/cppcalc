@@ -393,6 +393,18 @@ SYNTAX_EXPRESSION parseFactor()
         return {SYNTAX_TYPE_IMMEDIATE, {.im = p}};
         break;
     }
+    case LEXER_TYPE_STRING: {
+        SYNTAX_IMMEDIATE *p = new SYNTAX_IMMEDIATE;
+        assert(p != NULL);
+
+        char *data = strdup(val.text);
+        assert(data != NULL);
+
+        p->data = data;
+        p->type = SYNTAX_IMMEDIATE_TYPE_STRING;
+        return {SYNTAX_TYPE_IMMEDIATE, {.im = p}};
+        break; 
+    }
     case LEXER_TYPE_LEFT_BRACKET: {
         // かっこの時
         assert(val.op == '(');

@@ -234,7 +234,7 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             break;
         case '"':
             // STRING
-            while ((c = read() != '"'))
+            while ((c = read()) != '"')
             {
                 addc(c);
             }
