@@ -257,6 +257,12 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
             val->text = buf;
             return LEXER_TYPE_ASSIGN_OPERATOR;
             break;
+        case '%':
+            addc(c);
+            addc(0);
+            val->text = buf;
+            return LEXER_TYPE_OPERATOR;
+            break;
         case '"':
             // STRING
             while ((c = read() != '"'))
@@ -765,6 +771,7 @@ SYNTAX_EXPRESSION parseExpr2()
  * term ::= factor
  *        | factor "*" term
  *        | factor "/" term
+ *        | factor "%" term
  */
 SYNTAX_EXPRESSION parseTerm()
 {
@@ -780,7 +787,20 @@ SYNTAX_EXPRESSION parseTerm()
         return lhs;
     }
 
-    if (strcmp(val.text, "*") && strcmp(val.text, "/"))
+    SYNTAX_OPERATOR op;
+    if (!strcmp(val.text, "*"))
+    {
+        op = SYNTAX_OPERATOR_MUL;
+    }
+    else if (!strcmp(val.text, "/"))
+    {
+        op = SYNTAX_OPERATOR_DIV;
+    }   
+    else if (!strcmp(val.text, "%"))
+    {
+        op = SYNTAX_OPERATOR_REM;
+    }
+    else
     {
         lexer_pb();
         return lhs;
@@ -791,9 +811,7 @@ SYNTAX_EXPRESSION parseTerm()
 
     SYNTAX_EQUATION *eq = (SYNTAX_EQUATION *)malloc(sizeof(SYNTAX_EQUATION));
     assert(eq != NULL);
-    eq->op = !strcmp(val.text, "*")   ? SYNTAX_OPERATOR_MUL
-             : !strcmp(val.text, "/") ? SYNTAX_OPERATOR_SUB
-                                      : SYNTAX_OPERATOR_EQUAL;
+    eq->op = op;
     eq->l = lhs;
     eq->r = rhs;
     return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
