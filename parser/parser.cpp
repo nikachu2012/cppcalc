@@ -91,6 +91,11 @@ SYNTAX_FUNC_DEF parseFunctionDefine()
 
         // parse type
         type = lexer(&val);
+        if (type == LEXER_TYPE_RIGHT_BRACKET && val.op == ')')
+        {
+            // 引数0の時を排除
+            break;
+        }
         assert(type == LEXER_TYPE_KEYWORD);
         char *argType = strdup(val.text);
 
@@ -106,15 +111,16 @@ SYNTAX_FUNC_DEF parseFunctionDefine()
         {
             continue;
         }
-        else
+        else if (type == LEXER_TYPE_RIGHT_BRACKET && val.op == ')')
         {
             lexer_pb();
             break;
         }
+        else
+        {
+            assert(false);
+        }
     }
-
-    type = lexer(&val);
-    assert(type == LEXER_TYPE_RIGHT_BRACKET && val.op == ')');
 
     // parse ->
     type = lexer(&val);
@@ -403,7 +409,7 @@ SYNTAX_EXPRESSION parseFactor()
         p->data = data;
         p->type = SYNTAX_IMMEDIATE_TYPE_STRING;
         return {SYNTAX_TYPE_IMMEDIATE, {.im = p}};
-        break; 
+        break;
     }
     case LEXER_TYPE_LEFT_BRACKET: {
         // かっこの時
