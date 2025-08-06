@@ -444,26 +444,37 @@ SYNTAX_EXPRESSION parseFactor()
             std::vector<SYNTAX_EXPRESSION> t;
             while (1)
             {
-                SYNTAX_EXPRESSION arg = parseExpr();
-                t.push_back(arg);
-
                 LEXER_RESULT val;
                 LEXER_TYPE type = lexer(&val);
-                if (type == LEXER_TYPE_COMMA)
+
+                // 引数なしの時を判定
+                if (type == LEXER_TYPE_RIGHT_BRACKET && val.op == ')')
                 {
-                    continue;
+                    break;
                 }
                 else
                 {
                     lexer_pb();
+                }
+
+                SYNTAX_EXPRESSION arg = parseExpr();
+                t.push_back(arg);
+
+                // 式の次を解析
+                type = lexer(&val);
+                if (type == LEXER_TYPE_COMMA)
+                {
+                    continue;
+                }
+                else if (type == LEXER_TYPE_RIGHT_BRACKET && val.op == ')')
+                {
                     break;
                 }
+                else
+                {
+                    assert(false);
+                }
             }
-
-            LEXER_RESULT val_next_next;
-            LEXER_TYPE type_next_next = lexer(&val_next_next);
-            assert(type_next_next == LEXER_TYPE_RIGHT_BRACKET);
-            assert(val_next_next.op == ')');
 
             // 構造体内のvectorへコピー
             p->args = t;
