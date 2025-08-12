@@ -21,7 +21,7 @@
 
 struct Variable
 {
-    std::string type;
+    llvm::Type *type;
     llvm::Value *val;
     bool isUnsigned;
 };
@@ -39,7 +39,7 @@ class genIR
     VT globalVarialbleTable;
 
     llvm::Type *getType(char *c);
-    llvm::Value *searchVariableTable(std::string name, VT &variableTable);
+    Variable *searchVariableTable(std::string name, VT &variableTable);
 
     void genFunction(SYNTAX_FUNC_DEF fn);
     void genFunctionPrototype(SYNTAX_FUNC_DEF fn);

@@ -133,11 +133,14 @@ void genIR::genFunction(SYNTAX_FUNC_DEF fn)
     VT variableTable;
     for (size_t i = 0; i < fn.args.size(); i++)
     {
-        variableTable.insert({fn.args[i].name, {fn.args[i].name, func->getArg(i), false}});
-    }
+        auto &arg = fn.args[i];
+        auto type = getType(arg.type);
 
-    llvm::BasicBlock *bEntry = llvm::BasicBlock::Create(context, "entry", func);
-    builder.SetInsertPoint(bEntry);
+        auto dest = builder.CreateAlloca(type);
+        builder.CreateStore(func->getArg(i), dest);
+
+        variableTable.insert({arg.name, {type, dest, false}});
+    }
 
     // generate function statement
     genStatements(fn.st, variableTable);
@@ -279,11 +282,14 @@ llvm::Value *genIR::genFunctionCall(SYNTAX_FUNCTIONCALL fn, VT &variableTable)
 
 llvm::Value *genIR::genAssign(SYNTAX_ASSIGN as, VT &variableTable)
 {
+    llvm::Type *type;
     llvm::Value *dest;
     if (as.type == nullptr)
     {
         // variable without declare
-        dest = searchVariableTable(as.dest, variableTable);
+        auto vt = searchVariableTable(as.dest, variableTable);
+        type = vt->type;
+        dest = vt->val;
     }
     else
     {
@@ -292,15 +298,17 @@ llvm::Value *genIR::genAssign(SYNTAX_ASSIGN as, VT &variableTable)
             // すでに変数が存在するとき
             err("Variable '%s' already exist.", as.dest);
         }
-        dest = builder.CreateAlloca(getType(as.type));
 
-        variableTable.insert({as.dest, {as.type, dest, false}});
+        type = getType(as.type);
+        dest = builder.CreateAlloca(type);
+
+        variableTable.insert({as.dest, {type, dest, false}});
     }
 
     auto expr = genExpr(as.rhs, variableTable);
 
     // 変数先に合うように型を変更
-    auto expr2 = builder.CreateIntCast(expr, getType(as.type), true);
+    auto expr2 = builder.CreateIntCast(expr, type, true);
 
     builder.CreateStore(expr2, dest);
     return expr;
@@ -316,18 +324,17 @@ llvm::Value *genIR::genVariable(SYNTAX_VARIABLE va, VT &variableTable)
         err("Variable '%s' is not found.", va.name);
     }
 
-    auto data = builder.CreateLoad(variable->getType(), variable);
-
+    auto data = builder.CreateLoad(variable->type, variable->val);
     return data;
 }
 
-llvm::Value *genIR::searchVariableTable(std::string name, VT &variableTable)
+Variable *genIR::searchVariableTable(std::string name, VT &variableTable)
 {
     auto vtResult = variableTable.find(name);
     if (vtResult != variableTable.end())
     {
         // variableTableに指定変数が存在する
-        return vtResult->second.val;
+        return &vtResult->second;
     }
 
     // auto pvtResult = prevVariableTable.find(name);
@@ -339,7 +346,7 @@ llvm::Value *genIR::searchVariableTable(std::string name, VT &variableTable)
     auto gvtResult = globalVarialbleTable.find(name);
     if (gvtResult != globalVarialbleTable.end())
     {
-        return gvtResult->second.val;
+        return &gvtResult->second;
     }
 
     return nullptr;
