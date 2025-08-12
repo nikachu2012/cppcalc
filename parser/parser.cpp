@@ -292,21 +292,27 @@ SYNTAX_EXPRESSION parseExpr2()
         return lhs;
     }
 
-    if (strcmp(val.text, "+") && strcmp(val.text, "-"))
+    SYNTAX_OPERATOR temp_op;
+    if (!strcmp(val.text, "+"))
+    {
+        temp_op = SYNTAX_OPERATOR_ADD;
+    }
+    else if (!strcmp(val.text, "-"))
+    {
+        temp_op = SYNTAX_OPERATOR_SUB;
+    }
+    else
     {
         lexer_pb();
         return lhs;
     }
 
     // 式の右側がある時
-    assert(!strcmp(val.text, "+") || !strcmp(val.text, "-"));
     SYNTAX_EXPRESSION rhs = parseExpr();
 
     SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
     assert(eq != NULL);
-    eq->op = !strcmp(val.text, "+")   ? SYNTAX_OPERATOR_ADD
-             : !strcmp(val.text, "-") ? SYNTAX_OPERATOR_SUB
-                                      : SYNTAX_OPERATOR_EQUAL;
+    eq->op = temp_op;
     eq->l = lhs;
     eq->r = rhs;
     return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
