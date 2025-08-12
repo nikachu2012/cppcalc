@@ -130,6 +130,8 @@ void genIR::genFunction(SYNTAX_FUNC_DEF fn)
     llvm::Function *func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, fn.name, module);
     llvm::BasicBlock *bEntry = llvm::BasicBlock::Create(context, "entry", func);
     builder.SetInsertPoint(bEntry);
+
+    processingFunc = func;
     // add function table
     functionTable.insert({fn.name, func});
 
@@ -211,7 +213,24 @@ llvm::Value *genIR::genExpr(SYNTAX_EXPRESSION ex, VT &variableTable)
 void genIR::genIf(SYNTAX_IF iff, VT &variableTable)
 {
     // prevVariableTableとvariableTableを結合してもう一度genStatementsを呼ぶ
-    err("if statement detected.");
+    auto expr = genExpr(iff.condition, variableTable);
+
+    llvm::BasicBlock *bThen = llvm::BasicBlock::Create(context, "then", processingFunc);
+    llvm::BasicBlock *bElse = llvm::BasicBlock::Create(context, "else", processingFunc);
+    llvm::BasicBlock *bEnd = llvm::BasicBlock::Create(context, "end", processingFunc);
+    builder.CreateCondBr(expr, bThen, bElse);
+
+    // generate then block
+    builder.SetInsertPoint(bThen);
+    genStatements(iff.stmt, variableTable);
+    builder.CreateBr(bEnd);
+
+    // generate else block
+    builder.SetInsertPoint(bElse);
+    genStatements(iff.else_stmt, variableTable);
+    builder.CreateBr(bEnd);
+
+    builder.SetInsertPoint(bEnd);
 }
 
 void genIR::genWhile(SYNTAX_WHILE wh, VT &variableTable)
@@ -249,6 +268,24 @@ llvm::Value *genIR::genEquation(SYNTAX_EQUATION eq, VT &variableTable)
     case SYNTAX_OPERATOR_DIV:
         // create signed divide
         return builder.CreateSDiv(l, r);
+        break;
+    case SYNTAX_OPERATOR_EQ:
+        return builder.CreateICmpEQ(l, r);
+        break;
+    case SYNTAX_OPERATOR_NEQ:
+        return builder.CreateICmpNE(l, r);
+        break;
+    case SYNTAX_OPERATOR_LESS_THAN:
+        return builder.CreateICmpSLT(l, r);
+        break;
+    case SYNTAX_OPERATOR_LESS_THAN_EQ:
+        return builder.CreateICmpSLE(l, r);
+        break;
+    case SYNTAX_OPERATOR_GREATER_THAN:
+        return builder.CreateICmpSGT(l, r);
+        break;
+    case SYNTAX_OPERATOR_GREATER_THAN_EQ:
+        return builder.CreateICmpSGE(l, r);
         break;
     case SYNTAX_OPERATOR_UNDEF:
         // fallthrough

@@ -37,6 +37,7 @@ class genIR
 
     // temp variable
     llvm::Type *retType;
+    llvm::Function *processingFunc;
 
     std::map<std::string, llvm::Function *> functionTable;
     VT globalVarialbleTable;
