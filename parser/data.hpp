@@ -94,10 +94,12 @@ enum SYNTAX_STMT_TYPE
     SYNTAX_STMT_EXPR,
     SYNTAX_STMT_IF,
     SYNTAX_STMT_WHILE,
+    SYNTAX_STMT_RETURN,
 };
 
 struct SYNTAX_IF;
 struct SYNTAX_WHILE;
+struct SYNTAX_RETURN;
 
 struct SYNTAX_STATEMENT
 {
@@ -106,6 +108,7 @@ struct SYNTAX_STATEMENT
         SYNTAX_EXPRESSION *ex;
         SYNTAX_IF *iff; // ifが予約語のため
         SYNTAX_WHILE *wh;
+        SYNTAX_RETURN *ret;
     } data;
 };
 
@@ -120,6 +123,11 @@ struct SYNTAX_WHILE
 {
     SYNTAX_EXPRESSION condition;
     std::vector<SYNTAX_STATEMENT> st;
+};
+
+struct SYNTAX_RETURN
+{
+    SYNTAX_EXPRESSION expr;
 };
 
 struct ARGUMENT_LIST

@@ -197,6 +197,11 @@ void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
         dumpWhile(*st.data.wh, indentcount);
         putchar('\n');
         break;
+    case SYNTAX_STMT_RETURN:
+        printf("Return(expr: ");
+        dumpExpr(st.data.ret->expr, indentcount + 1);
+        puts(")");
+        break;
     default:
         return;
         break;

@@ -35,6 +35,9 @@ class genIR
     llvm::Module *module;
     llvm::IRBuilder<> builder;
 
+    // temp variable
+    llvm::Type *retType;
+
     std::map<std::string, llvm::Function *> functionTable;
     VT globalVarialbleTable;
 
@@ -46,6 +49,7 @@ class genIR
     void genStatements(std::vector<SYNTAX_STATEMENT> sts, VT variableTable);
     void genIf(SYNTAX_IF iff, VT &variableTable);
     void genWhile(SYNTAX_WHILE wh, VT &variableTable);
+    void genReturn(SYNTAX_RETURN ret, VT &variableTable);
 
     llvm::Value *genExpr(SYNTAX_EXPRESSION ex, VT &variableTable);
     llvm::Value *genEquation(SYNTAX_EQUATION eq, VT &variableTable);

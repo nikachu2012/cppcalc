@@ -124,8 +124,12 @@ void genIR::genFunction(SYNTAX_FUNC_DEF fn)
         // variableTable.insert({arg.name, builder.getInt1Ty()});
     }
 
-    llvm::FunctionType *funcType = llvm::FunctionType::get(getType(fn.retType), args, false);
+    retType = getType(fn.retType);
+
+    llvm::FunctionType *funcType = llvm::FunctionType::get(retType, args, false);
     llvm::Function *func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, fn.name, module);
+    llvm::BasicBlock *bEntry = llvm::BasicBlock::Create(context, "entry", func);
+    builder.SetInsertPoint(bEntry);
     // add function table
     functionTable.insert({fn.name, func});
 
@@ -164,6 +168,9 @@ void genIR::genStatements(std::vector<SYNTAX_STATEMENT> sts, VT variableTable)
             break;
         case SYNTAX_STMT_WHILE:
             genWhile(*st.data.wh, variableTable);
+            break;
+        case SYNTAX_STMT_RETURN:
+            genReturn(*st.data.ret, variableTable);
             break;
         default:
             err("Undefined statement type '%d' .", st.type);
@@ -212,6 +219,15 @@ void genIR::genWhile(SYNTAX_WHILE wh, VT &variableTable)
     err("while statement detected.");
 }
 
+void genIR::genReturn(SYNTAX_RETURN ret, VT &variableTable)
+{
+    auto expr = genExpr(ret.expr, variableTable);
+    auto expr2 = builder.CreateIntCast(expr, retType, true);
+
+    builder.CreateRet(expr2);
+}
+
+// this function use integer only!
 llvm::Value *genIR::genEquation(SYNTAX_EQUATION eq, VT &variableTable)
 {
     auto l = genExpr(eq.l, variableTable);
