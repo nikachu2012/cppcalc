@@ -246,7 +246,22 @@ void genIR::genIf(SYNTAX_IF iff, VT &variableTable)
 
 void genIR::genWhile(SYNTAX_WHILE wh, VT &variableTable)
 {
-    err("while statement detected.");
+    llvm::BasicBlock *bCond = llvm::BasicBlock::Create(context, "cond", processingFunc);
+    llvm::BasicBlock *bBody = llvm::BasicBlock::Create(context, "body", processingFunc);
+    llvm::BasicBlock *bEnd = llvm::BasicBlock::Create(context, "end", processingFunc);
+    builder.CreateBr(bCond);
+
+    // generate condition
+    builder.SetInsertPoint(bCond);
+    auto expr = genExpr(wh.condition, variableTable);
+    builder.CreateCondBr(expr, bBody, bEnd);
+
+    // generate body
+    builder.SetInsertPoint(bBody);
+    genStatements(wh.st, variableTable);
+    builder.CreateBr(bCond);
+
+    builder.SetInsertPoint(bEnd);
 }
 
 void genIR::genReturn(SYNTAX_RETURN *ret, VT &variableTable)
