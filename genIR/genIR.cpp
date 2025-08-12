@@ -57,7 +57,10 @@ void genIR::generate(SYNTAX_PROGRAM pro)
 
 llvm::Type *genIR::getType(char *c)
 {
-    if (!strcmp(c, "bool"))
+    if (!strcmp(c, "void"))
+        return builder.getVoidTy();
+
+    else if (!strcmp(c, "bool"))
         return builder.getInt1Ty();
 
     else if (!strcmp(c, "i8"))
@@ -153,7 +156,15 @@ void genIR::genFunction(SYNTAX_FUNC_DEF fn)
 
     // builder.CreateAdd(fMain->getArg(0), builder.getInt64(10));
     // builder.CreateRet(builder.getInt32(0));
-    builder.CreateRetVoid();
+    if (retType->isVoidTy())
+    {
+        builder.CreateRetVoid();
+    }
+    else
+    {
+        auto expr2 = builder.CreateIntCast(builder.getInt64(0), retType, true);
+        builder.CreateRet(expr2);
+    }
 }
 
 void genIR::genStatements(std::vector<SYNTAX_STATEMENT> sts, VT variableTable)
@@ -172,7 +183,7 @@ void genIR::genStatements(std::vector<SYNTAX_STATEMENT> sts, VT variableTable)
             genWhile(*st.data.wh, variableTable);
             break;
         case SYNTAX_STMT_RETURN:
-            genReturn(*st.data.ret, variableTable);
+            genReturn(st.data.ret, variableTable);
             break;
         default:
             err("Undefined statement type '%d' .", st.type);
@@ -238,12 +249,24 @@ void genIR::genWhile(SYNTAX_WHILE wh, VT &variableTable)
     err("while statement detected.");
 }
 
-void genIR::genReturn(SYNTAX_RETURN ret, VT &variableTable)
+void genIR::genReturn(SYNTAX_RETURN *ret, VT &variableTable)
 {
-    auto expr = genExpr(ret.expr, variableTable);
-    auto expr2 = builder.CreateIntCast(expr, retType, true);
+    if (retType->isVoidTy())
+    {
+        builder.CreateRetVoid();
+    }
+    else
+    {
+        if (ret == nullptr)
+        {
+            err("non-void function must be return expr.");
+        }
 
-    builder.CreateRet(expr2);
+        auto expr = genExpr(ret->expr, variableTable);
+        auto expr2 = builder.CreateIntCast(expr, retType, true);
+
+        builder.CreateRet(expr2);
+    }
 }
 
 // this function use integer only!
@@ -357,6 +380,11 @@ llvm::Value *genIR::genAssign(SYNTAX_ASSIGN as, VT &variableTable)
         dest = builder.CreateAlloca(type);
 
         variableTable.insert({as.dest, {type, dest, false}});
+    }
+
+    if (type->isVoidTy())
+    {
+        err("type 'void' variable assign is invalid.");
     }
 
     auto expr = genExpr(as.rhs, variableTable);
