@@ -96,6 +96,7 @@ LEXER_TYPE lexer(LEXER_RESULT *val)
                 return LEXER_TYPE_OPERATOR;
             }
             break;
+        case '0':
         case '1':
         case '2':
         case '3':
