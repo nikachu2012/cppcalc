@@ -1,21 +1,5 @@
-fn main(int argc, ptr argv) -> int {
-
+fn main(i32 argc) -> i32 {
+    i8 kusa = 10 + argc;
+    puts("KUSA");
+    i32 kusaa = 100;
 }
-if 11451 == 4 {
-    func(11+451*4);
-    if 114514 {
-        func(11+451*4 % 5);
-    }
-} 
-while 1 {
-    func(1);
-}
-if 11451+4 { } 
-if 11451+4 {
-    func(11+451*4, 1919, 810);
-    func(11+451*4);
-} else {
-    func(11+451*4);
-}
-int a = 114+5+14;
-114*5 == 14;

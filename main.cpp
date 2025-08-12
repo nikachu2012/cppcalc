@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
+#include "genIR/genIR.hpp"
 #include "lexer/lexer.hpp"
 #include "parser/data.hpp"
 #include "parser/parser.hpp"
-
 
 constexpr void indent(int count)
 {
@@ -180,6 +180,7 @@ void dumpStatements(std::vector<SYNTAX_STATEMENT> sts, int indentcount)
     indent(indentcount);
     putchar(']');
 }
+
 void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
 {
     switch (st.type)
@@ -256,7 +257,10 @@ int main(void)
 
     SYNTAX_PROGRAM t = parseProgram();
 
-    dumpProgram(t, 0);
+    // dumpProgram(t, 0);
+
+    genIR gen;
+    gen.generate(t);
 
     // SYNTAX_EXPRESSION t = parseExpr();
     // dumpExpr(t, 0);
