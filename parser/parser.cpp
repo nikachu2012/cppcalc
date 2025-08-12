@@ -113,7 +113,6 @@ SYNTAX_FUNC_DEF parseFunctionDefine()
         }
         else if (type == LEXER_TYPE_RIGHT_BRACKET && val.op == ')')
         {
-            lexer_pb();
             break;
         }
         else
@@ -555,7 +554,7 @@ SYNTAX_EXPRESSION parseFactor()
         {
             // keywordのみ
             lexer_pb();
-            
+
             auto *va = new SYNTAX_VARIABLE;
             va->name = strdup(val.text);
             return {SYNTAX_TYPE_VARIABLE, {.va = va}};
