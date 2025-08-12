@@ -48,7 +48,7 @@ void genIR::generate(SYNTAX_PROGRAM pro)
         }
         else
         {
-            err("Undefined program type.");
+            err("Undefined program type %d.", e.type);
         }
     }
 
@@ -80,8 +80,7 @@ llvm::Type *genIR::getType(char *c)
 
     else
     {
-        printf("%s\n", c);
-        err("Undefined type.");
+        err("Undefined type '%s' .", c);
     }
 
     return nullptr;
@@ -91,7 +90,7 @@ void genIR::genFunctionPrototype(SYNTAX_FUNC_DEF fn)
 {
     if (functionTable.count(fn.name) != 0)
     {
-        err("Function is already defined.");
+        err("Function '%s' is already defined.", fn.name);
     }
 
     std::vector<llvm::Type *> args;
@@ -114,7 +113,7 @@ void genIR::genFunction(SYNTAX_FUNC_DEF fn)
     // std::vector<llvm::Type *> args = {builder.getInt32Ty(), builder.getInt8Ty()->getPointerTo()};
     if (functionTable.count(fn.name) != 0)
     {
-        err("Function is already defined.");
+        err("Function '%s' is already defined.", fn.name);
     }
 
     std::vector<llvm::Type *> args;
@@ -164,7 +163,7 @@ void genIR::genStatements(std::vector<SYNTAX_STATEMENT> sts, VT variableTable)
             genWhile(*st.data.wh, variableTable);
             break;
         default:
-            err("Undefined statement type.");
+            err("Undefined statement type '%d' .", st.type);
             break;
         }
     }
@@ -194,7 +193,7 @@ llvm::Value *genIR::genExpr(SYNTAX_EXPRESSION ex, VT &variableTable)
     }
     else
     {
-        err("Undefined expression type.");
+        err("Undefined expression type '%d'.", ex.type);
         return nullptr;
     }
 }
@@ -214,13 +213,10 @@ llvm::Value *genIR::genEquation(SYNTAX_EQUATION eq, VT &variableTable)
 {
     auto l = genExpr(eq.l, variableTable);
     auto r = genExpr(eq.r, variableTable);
-    
+
     // if (l->getType()->isFloatingPointTy())
     switch (eq.op)
     {
-    case SYNTAX_OPERATOR_EQUAL:
-        err("Unexpected Equal operator.");
-        break;
     case SYNTAX_OPERATOR_ADD:
         return builder.CreateAdd(l, r);
         break;
@@ -237,7 +233,7 @@ llvm::Value *genIR::genEquation(SYNTAX_EQUATION eq, VT &variableTable)
     case SYNTAX_OPERATOR_UNDEF:
         // fallthrough
     default:
-        err("Undefined equation operator.");
+        err("Undefined equation operator '%d'.", eq.op);
         break;
     }
     return nullptr;
@@ -260,7 +256,7 @@ llvm::Value *genIR::genImmediate(SYNTAX_IMMEDIATE im)
     default:
         break;
     }
-    err("Undefined immediate type exception.");
+    err("Undefined immediate type '%d' im.data:'%s'.", im.type, im.data);
     return nullptr;
 }
 
@@ -269,7 +265,7 @@ llvm::Value *genIR::genFunctionCall(SYNTAX_FUNCTIONCALL fn, VT &variableTable)
     auto func = functionTable.find(fn.name);
     if (func == functionTable.end())
     {
-        err("Function is not found.");
+        err("Function '%s' is not found.", func->second->getName());
     }
 
     std::vector<llvm::Value *> args;
@@ -294,7 +290,7 @@ llvm::Value *genIR::genAssign(SYNTAX_ASSIGN as, VT &variableTable)
         if (searchVariableTable(as.dest, variableTable) != nullptr)
         {
             // すでに変数が存在するとき
-            err("Variable already exist.");
+            err("Variable '%s' already exist.", as.dest);
         }
         dest = builder.CreateAlloca(getType(as.type));
 
@@ -317,7 +313,7 @@ llvm::Value *genIR::genVariable(SYNTAX_VARIABLE va, VT &variableTable)
     if (variable == nullptr)
     {
         /* code */
-        err("Variable is not found.");
+        err("Variable '%s' is not found.", va.name);
     }
 
     auto data = builder.CreateLoad(variable->getType(), variable);
