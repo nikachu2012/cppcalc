@@ -140,7 +140,7 @@ SYNTAX_FUNC_DEF parseFunctionDefine()
  *             | "if" expr block
  *             | "if" expr block "else" block
  *             | "while" expr block
- *             | "return" expr ";"
+ *             | "return" [ expr ] ";"
  */
 SYNTAX_STATEMENT parseStatement()
 {
@@ -194,12 +194,22 @@ SYNTAX_STATEMENT parseStatement()
     else if (type == LEXER_TYPE_KEYWORD && !strcmp(val.text, "return"))
     {
         // return
+        LEXER_TYPE type = lexer(&val);
+        if (type == LEXER_TYPE_SEMICOLON)
+        {
+            return {SYNTAX_STMT_RETURN, {.ret = nullptr}};
+        }
+        else
+        {
+            lexer_pb();
+        }
+
         SYNTAX_EXPRESSION ex = parseExpr();
 
         SYNTAX_RETURN *ret = new SYNTAX_RETURN;
         ret->expr = ex;
 
-        LEXER_TYPE type = lexer(&val);
+        type = lexer(&val);
         assert(type == LEXER_TYPE_SEMICOLON);
 
         return {SYNTAX_STMT_RETURN, {.ret = ret}};

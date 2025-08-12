@@ -197,11 +197,19 @@ void dumpStatement(SYNTAX_STATEMENT st, int indentcount)
         dumpWhile(*st.data.wh, indentcount);
         putchar('\n');
         break;
-    case SYNTAX_STMT_RETURN:
-        printf("Return(expr: ");
-        dumpExpr(st.data.ret->expr, indentcount + 1);
-        puts(")");
+    case SYNTAX_STMT_RETURN: {
+        if (st.data.ret == nullptr)
+        {
+            puts("Return(expr: void return)");
+        }
+        else
+        {
+            printf("Return(expr: ");
+            dumpExpr(st.data.ret->expr, indentcount + 1);
+            puts(")");
+        }
         break;
+    }
     default:
         return;
         break;
@@ -262,7 +270,7 @@ int main(void)
 
     SYNTAX_PROGRAM t = parseProgram();
 
-    // dumpProgram(t, 0);
+    dumpProgram(t, 0);
 
     genIR gen;
     gen.generate(t);
