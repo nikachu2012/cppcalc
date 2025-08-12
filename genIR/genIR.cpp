@@ -232,6 +232,7 @@ llvm::Value *genIR::genEquation(SYNTAX_EQUATION eq, VT &variableTable)
 {
     auto l = genExpr(eq.l, variableTable);
     auto r = genExpr(eq.r, variableTable);
+    r = builder.CreateIntCast(r, l->getType(), false);
 
     // if (l->getType()->isFloatingPointTy())
     switch (eq.op)
