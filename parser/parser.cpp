@@ -64,7 +64,7 @@ std::vector<SYNTAX_STATEMENT> parseBlock()
     return res;
 }
 /*
- * function-define ::= "fn" keyword "(" argument-list [, argument-list]* ")" "->" keyword block
+ * function-define ::= "fn" keyword "(" { | argument-list [, argument-list]* } ")" "->" keyword block
  * argument-list ::= keyword keyword
  */
 SYNTAX_FUNC_DEF parseFunctionDefine()
