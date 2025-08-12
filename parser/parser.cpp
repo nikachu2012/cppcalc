@@ -555,7 +555,10 @@ SYNTAX_EXPRESSION parseFactor()
         {
             // keywordのみ
             lexer_pb();
-            return {};
+            
+            auto *va = new SYNTAX_VARIABLE;
+            va->name = strdup(val.text);
+            return {SYNTAX_TYPE_VARIABLE, {.va = va}};
         }
         break;
     }
