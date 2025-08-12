@@ -570,7 +570,7 @@ SYNTAX_EXPRESSION parseFactor()
             lexer_pb();
 
             auto *va = new SYNTAX_VARIABLE;
-            va->name = strdup(val.text);
+            va->name = temp_name;
             return {SYNTAX_TYPE_VARIABLE, {.va = va}};
         }
         break;
