@@ -9,13 +9,18 @@
 #include <map>
 #include <string>
 
+#include "llvm/IR/PassManager.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/Mem2Reg.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Pass.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
-
 // void genIR(SYNTAX_PROGRAM pro);
 // llvm::Type *getType(char *typestr, llvm::IRBuilder<> &builder);
 

@@ -161,15 +161,34 @@ void genIR::genFunction(SYNTAX_FUNC_DEF fn)
 
     // builder.CreateAdd(fMain->getArg(0), builder.getInt64(10));
     // builder.CreateRet(builder.getInt32(0));
-    if (retType->isVoidTy())
+
+    // if (retType->isVoidTy())
+    // {
+    //     builder.CreateRetVoid();
+    // }
+    // else
+    // {
+    //     auto expr2 = builder.CreateIntCast(builder.getInt64(0), retType, true);
+    //     builder.CreateRet(expr2);
+    // }
+
+    if (llvm::verifyFunction(*func, &llvm::errs()))
     {
-        builder.CreateRetVoid();
+        err("function verify failed.");
     }
-    else
-    {
-        auto expr2 = builder.CreateIntCast(builder.getInt64(0), retType, true);
-        builder.CreateRet(expr2);
-    }
+
+    llvm::FunctionPassManager fpm;
+    llvm::ModuleAnalysisManager mam;
+    llvm::FunctionAnalysisManager fam;
+    llvm::PassBuilder PB;
+    PB.registerModuleAnalyses(mam);
+    PB.registerFunctionAnalyses(fam);
+
+    // add mem2reg
+    fpm.addPass(llvm::PromotePass());
+
+    fpm.run(*func, fam);
+    // PB.crossRegisterProxies(lam, fam, cgam, mam);
 }
 
 void genIR::genStatements(std::vector<SYNTAX_STATEMENT> sts, VT variableTable)
