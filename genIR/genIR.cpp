@@ -379,9 +379,13 @@ llvm::Value *genIR::genFunctionCall(SYNTAX_FUNCTIONCALL fn, VT &variableTable)
     }
 
     std::vector<llvm::Value *> args;
-    for (auto &&arg : fn.args)
+
+    for (size_t i = 0; i < fn.args.size(); i++)
     {
-        args.push_back(genExpr(arg, variableTable));
+        /* code */
+        auto &arg = fn.args[i];
+        auto argg = builder.CreateIntCast(genExpr(arg, variableTable), func->second->getArg(i)->getType(), true);
+        args.push_back(argg);
     }
 
     return builder.CreateCall(func->second, args);
