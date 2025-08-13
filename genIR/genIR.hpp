@@ -64,6 +64,10 @@ class genIR
     ~genIR();
 
     void generate(SYNTAX_PROGRAM pro);
+    llvm::Module *getModule()
+    {
+        return this->module;
+    }
 };
 
 #endif

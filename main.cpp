@@ -10,6 +10,7 @@
 #include "lexer/lexer.hpp"
 #include "parser/data.hpp"
 #include "parser/parser.hpp"
+#include "llvm/Support/CommandLine.h"
 
 constexpr void indent(int count)
 {
@@ -261,24 +262,54 @@ void dumpProgram(SYNTAX_PROGRAM pro, int indentcount)
         }
     }
 }
-int main(void)
+
+namespace
 {
-    f = fopen("source.kano", "r");
-    assert(f != NULL);
+llvm::cl::opt<std::string> inputSource{
+    llvm::cl::Positional,
+    llvm::cl::desc("<input source>"),
+    llvm::cl::init("-"),
+};
+llvm::cl::opt<std::string> OutputFile{
+    "o",
+    llvm::cl::desc("output file"),
+    llvm::cl::value_desc("filename"),
+    llvm::cl::init("out.ll"),
+};
+} // namespace
+
+int main(int argc, char **argv)
+{
+    llvm::cl::ParseCommandLineOptions(argc, argv, "kano compiler");
+
+    f = fopen(inputSource.c_str(), "r");
+    if (f == NULL)
+    {
+        printf("File '%s' open failed (errno: %s).\n", inputSource.c_str(), strerror(errno));
+        return 1;
+    }
+
     // std::string target = "/**/if 11451+4 {func(11+451*4); int c = 10;c += 10;(1145+14)*1919;}114+5+14;114*5+14;";
     // t = target.c_str();
 
     SYNTAX_PROGRAM t = parseProgram();
+    fclose(f);
 
-    dumpProgram(t, 0);
+    // dumpProgram(t, 0);
 
     genIR gen;
     gen.generate(t);
 
-    // SYNTAX_EXPRESSION t = parseExpr();
-    // dumpExpr(t, 0);
+    std::error_code errorCode;
+    llvm::raw_fd_ostream stream(OutputFile, errorCode);
 
-    // printf("%d\n", calcExpr(t));
-    fclose(f);
+    if (stream.has_error())
+    {
+        /* code */
+        err("File '%s' save failed. (err: %s)", OutputFile.c_str(), errorCode.message().c_str());
+    }
+
+    gen.getModule()->print(stream, nullptr);
+    
     return 0;
 }

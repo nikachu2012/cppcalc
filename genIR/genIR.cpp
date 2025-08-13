@@ -58,8 +58,6 @@ void genIR::generate(SYNTAX_PROGRAM pro)
             err("Undefined program type %d.", e.type);
         }
     }
-
-    module->print(llvm::outs(), nullptr);
 }
 
 llvm::Type *genIR::getType(char *c)
