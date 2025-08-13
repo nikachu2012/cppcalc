@@ -22,7 +22,7 @@ void genIR::generate(SYNTAX_PROGRAM pro)
     // llvm::FunctionType *tPuts = llvm::FunctionType::get(builder.getInt32Ty(), aPuts, false);
     //  llvm::Function::Create(tPuts, llvm::Function::ExternalLinkage, "puts", module);
 
-    genFunctionPrototype({"puts", {{"ptr", "c"}}, "i32", {}});
+    // genFunctionPrototype({"puts", {{"ptr", "c"}}, "i32", {}});
     // // create define main func
     // std::vector<llvm::Type *> args = {builder.getInt32Ty(), builder.getInt8Ty()->getPointerTo()};
     // llvm::FunctionType *tMain = llvm::FunctionType::get(builder.getInt32Ty(), args, false);
@@ -40,7 +40,14 @@ void genIR::generate(SYNTAX_PROGRAM pro)
     {
         if (e.type == SYNTAX_FUNCTION_DEF)
         {
-            genFunction(*e.data.fn);
+            if (e.data.fn->st.size() == 0)
+            {
+                genFunctionPrototype(*e.data.fn);
+            }
+            else
+            {
+                genFunction(*e.data.fn);
+            }
         }
         else if (SYNTAX_PRG_STATEMENT)
         {

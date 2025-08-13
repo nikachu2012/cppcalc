@@ -65,6 +65,7 @@ std::vector<SYNTAX_STATEMENT> parseBlock()
 }
 /*
  * function-define ::= "fn" keyword "(" { | argument-list [, argument-list]* } ")" "->" keyword block
+ *                    | "fn" keyword "(" { | argument-list [, argument-list]* } ")" "->" keyword ";"
  * argument-list ::= keyword keyword
  */
 SYNTAX_FUNC_DEF parseFunctionDefine()
@@ -130,10 +131,20 @@ SYNTAX_FUNC_DEF parseFunctionDefine()
     assert(type == LEXER_TYPE_KEYWORD);
     char *retType = strdup(val.text);
 
-    // parse block
-    auto st = parseBlock();
+    type = lexer(&val);
 
-    return {name, args, retType, st};
+    if (type == LEXER_TYPE_SEMICOLON)
+    {
+        return {name, args, retType, {}};
+    }
+    else
+    {
+        lexer_pb();
+
+        // parse block
+        auto st = parseBlock();
+        return {name, args, retType, st};
+    }
 }
 /*
  * statement ::= expr ";"
