@@ -367,7 +367,7 @@ llvm::Value *genIR::genFunctionCall(SYNTAX_FUNCTIONCALL fn, VT &variableTable)
     auto func = functionTable.find(fn.name);
     if (func == functionTable.end())
     {
-        err("Function '%s' is not found.", func->second->getName());
+        err("Function '%s' is not found.", fn.name);
     }
 
     std::vector<llvm::Value *> args;
