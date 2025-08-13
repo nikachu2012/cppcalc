@@ -9,6 +9,7 @@
 
 SYNTAX_EXPRESSION parseExpr();
 SYNTAX_EXPRESSION parseExpr2();
+SYNTAX_EXPRESSION parseExpr3();
 SYNTAX_EXPRESSION parseTerm();
 SYNTAX_EXPRESSION parseFactor();
 SYNTAX_PROGRAM parseProgram();

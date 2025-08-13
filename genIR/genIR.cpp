@@ -312,6 +312,16 @@ llvm::Value *genIR::genEquation(SYNTAX_EQUATION eq, VT &variableTable)
         // create signed divide
         return builder.CreateSDiv(l, r);
         break;
+    case SYNTAX_OPERATOR_REM:
+        // create signed remainder
+        return builder.CreateSRem(l, r);
+        break;
+    case SYNTAX_OPERATOR_LSHIFT:
+        return builder.CreateShl(l, r);
+        break;
+    case SYNTAX_OPERATOR_RSHIFT:
+        return builder.CreateLShr(l, r);
+        break;
     case SYNTAX_OPERATOR_EQ:
         return builder.CreateICmpEQ(l, r);
         break;

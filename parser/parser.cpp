@@ -308,11 +308,56 @@ SYNTAX_EXPRESSION parseExpr()
     return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
 }
 /*
- * expr2 ::= term
+ * expr2 ::= expr3
+ *         | expr3 "<<" expr3
+ *         | expr3 ">>" expr3
+ */
+SYNTAX_EXPRESSION parseExpr2()
+{
+    SYNTAX_EXPRESSION lhs = parseExpr3();
+
+    // termの次をチェック
+    LEXER_RESULT val;
+    LEXER_TYPE type = lexer(&val);
+
+    if (type != LEXER_TYPE_OPERATOR)
+    {
+        lexer_pb();
+        return lhs;
+    }
+
+    SYNTAX_OPERATOR temp_op;
+    if (!strcmp(val.text, "<<"))
+    {
+        temp_op = SYNTAX_OPERATOR_LSHIFT;
+    }
+    else if (!strcmp(val.text, ">>"))
+    {
+        temp_op = SYNTAX_OPERATOR_RSHIFT;
+    }
+    else
+    {
+        lexer_pb();
+        return lhs;
+    }
+
+    // 式の右側がある時
+    SYNTAX_EXPRESSION rhs = parseExpr3();
+
+    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
+    assert(eq != NULL);
+    eq->op = temp_op;
+    eq->l = lhs;
+    eq->r = rhs;
+    return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+}
+
+/*
+ * expr3 ::= term
  *        | term ["+" term]*
  *        | term ["-" term]*
  */
-SYNTAX_EXPRESSION parseExpr2()
+SYNTAX_EXPRESSION parseExpr3()
 {
     SYNTAX_EXPRESSION lhs = parseTerm();
 
