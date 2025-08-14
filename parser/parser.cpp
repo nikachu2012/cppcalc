@@ -257,55 +257,58 @@ SYNTAX_EXPRESSION parseExpr()
 {
     SYNTAX_EXPRESSION lhs = parseExpr2();
 
-    // termの次をチェック
-    LEXER_RESULT val;
-    LEXER_TYPE type = lexer(&val);
+    while (1)
+    {
+        // termの次をチェック
+        LEXER_RESULT val;
+        LEXER_TYPE type = lexer(&val);
 
-    if (type != LEXER_TYPE_OPERATOR)
-    {
-        lexer_pb();
-        return lhs;
-    }
+        if (type != LEXER_TYPE_OPERATOR)
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    SYNTAX_OPERATOR temp_op;
-    if (!strcmp(val.text, ">"))
-    {
-        temp_op = SYNTAX_OPERATOR_GREATER_THAN;
-    }
-    else if (!strcmp(val.text, ">="))
-    {
-        temp_op = SYNTAX_OPERATOR_GREATER_THAN_EQ;
-    }
-    else if (!strcmp(val.text, "<"))
-    {
-        temp_op = SYNTAX_OPERATOR_LESS_THAN;
-    }
-    else if (!strcmp(val.text, "<="))
-    {
-        temp_op = SYNTAX_OPERATOR_LESS_THAN_EQ;
-    }
-    else if (!strcmp(val.text, "=="))
-    {
-        temp_op = SYNTAX_OPERATOR_EQ;
-    }
-    else if (!strcmp(val.text, "!="))
-    {
-        temp_op = SYNTAX_OPERATOR_NEQ;
-    }
-    else
-    {
-        lexer_pb();
-        return lhs;
-    }
+        SYNTAX_OPERATOR temp_op;
+        if (!strcmp(val.text, ">"))
+        {
+            temp_op = SYNTAX_OPERATOR_GREATER_THAN;
+        }
+        else if (!strcmp(val.text, ">="))
+        {
+            temp_op = SYNTAX_OPERATOR_GREATER_THAN_EQ;
+        }
+        else if (!strcmp(val.text, "<"))
+        {
+            temp_op = SYNTAX_OPERATOR_LESS_THAN;
+        }
+        else if (!strcmp(val.text, "<="))
+        {
+            temp_op = SYNTAX_OPERATOR_LESS_THAN_EQ;
+        }
+        else if (!strcmp(val.text, "=="))
+        {
+            temp_op = SYNTAX_OPERATOR_EQ;
+        }
+        else if (!strcmp(val.text, "!="))
+        {
+            temp_op = SYNTAX_OPERATOR_NEQ;
+        }
+        else
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    // 式の右側がある時
-    SYNTAX_EXPRESSION rhs = parseExpr2();
-    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
-    assert(eq != NULL);
-    eq->op = temp_op;
-    eq->l = lhs;
-    eq->r = rhs;
-    return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+        // 式の右側がある時
+        SYNTAX_EXPRESSION rhs = parseExpr2();
+        SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
+        assert(eq != NULL);
+        eq->op = temp_op;
+        eq->l = lhs;
+        eq->r = rhs;
+        lhs = {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+    }
 }
 /*
  * expr2 ::= expr3
@@ -316,40 +319,43 @@ SYNTAX_EXPRESSION parseExpr2()
 {
     SYNTAX_EXPRESSION lhs = parseExpr3();
 
-    // termの次をチェック
-    LEXER_RESULT val;
-    LEXER_TYPE type = lexer(&val);
-
-    if (type != LEXER_TYPE_OPERATOR)
+    while (1)
     {
-        lexer_pb();
-        return lhs;
-    }
+        // termの次をチェック
+        LEXER_RESULT val;
+        LEXER_TYPE type = lexer(&val);
 
-    SYNTAX_OPERATOR temp_op;
-    if (!strcmp(val.text, "<<"))
-    {
-        temp_op = SYNTAX_OPERATOR_LSHIFT;
-    }
-    else if (!strcmp(val.text, ">>"))
-    {
-        temp_op = SYNTAX_OPERATOR_RSHIFT;
-    }
-    else
-    {
-        lexer_pb();
-        return lhs;
-    }
+        if (type != LEXER_TYPE_OPERATOR)
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    // 式の右側がある時
-    SYNTAX_EXPRESSION rhs = parseExpr3();
+        SYNTAX_OPERATOR temp_op;
+        if (!strcmp(val.text, "<<"))
+        {
+            temp_op = SYNTAX_OPERATOR_LSHIFT;
+        }
+        else if (!strcmp(val.text, ">>"))
+        {
+            temp_op = SYNTAX_OPERATOR_RSHIFT;
+        }
+        else
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
-    assert(eq != NULL);
-    eq->op = temp_op;
-    eq->l = lhs;
-    eq->r = rhs;
-    return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+        // 式の右側がある時
+        SYNTAX_EXPRESSION rhs = parseExpr3();
+
+        SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
+        assert(eq != NULL);
+        eq->op = temp_op;
+        eq->l = lhs;
+        eq->r = rhs;
+        lhs = {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+    }
 }
 
 /*
@@ -361,40 +367,43 @@ SYNTAX_EXPRESSION parseExpr3()
 {
     SYNTAX_EXPRESSION lhs = parseTerm();
 
-    // termの次をチェック
-    LEXER_RESULT val;
-    LEXER_TYPE type = lexer(&val);
-
-    if (type != LEXER_TYPE_OPERATOR)
+    while (1)
     {
-        lexer_pb();
-        return lhs;
-    }
+        // termの次をチェック
+        LEXER_RESULT val;
+        LEXER_TYPE type = lexer(&val);
 
-    SYNTAX_OPERATOR temp_op;
-    if (!strcmp(val.text, "+"))
-    {
-        temp_op = SYNTAX_OPERATOR_ADD;
-    }
-    else if (!strcmp(val.text, "-"))
-    {
-        temp_op = SYNTAX_OPERATOR_SUB;
-    }
-    else
-    {
-        lexer_pb();
-        return lhs;
-    }
+        if (type != LEXER_TYPE_OPERATOR)
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    // 式の右側がある時
-    SYNTAX_EXPRESSION rhs = parseExpr();
+        SYNTAX_OPERATOR temp_op;
+        if (!strcmp(val.text, "+"))
+        {
+            temp_op = SYNTAX_OPERATOR_ADD;
+        }
+        else if (!strcmp(val.text, "-"))
+        {
+            temp_op = SYNTAX_OPERATOR_SUB;
+        }
+        else
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
-    assert(eq != NULL);
-    eq->op = temp_op;
-    eq->l = lhs;
-    eq->r = rhs;
-    return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+        // 式の右側がある時
+        SYNTAX_EXPRESSION rhs = parseTerm();
+
+        SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
+        assert(eq != NULL);
+        eq->op = temp_op;
+        eq->l = lhs;
+        eq->r = rhs;
+        lhs = {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+    }
 }
 
 /*
@@ -407,44 +416,47 @@ SYNTAX_EXPRESSION parseTerm()
 {
     SYNTAX_EXPRESSION lhs = parseFactor();
 
-    // factorの次をチェック
-    LEXER_RESULT val;
-    LEXER_TYPE type = lexer(&val);
+    while (1)
+    {
+        // factorの次をチェック
+        LEXER_RESULT val;
+        LEXER_TYPE type = lexer(&val);
 
-    if (type != LEXER_TYPE_OPERATOR)
-    {
-        lexer_pb();
-        return lhs;
-    }
+        if (type != LEXER_TYPE_OPERATOR)
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    SYNTAX_OPERATOR op;
-    if (!strcmp(val.text, "*"))
-    {
-        op = SYNTAX_OPERATOR_MUL;
-    }
-    else if (!strcmp(val.text, "/"))
-    {
-        op = SYNTAX_OPERATOR_DIV;
-    }
-    else if (!strcmp(val.text, "%"))
-    {
-        op = SYNTAX_OPERATOR_REM;
-    }
-    else
-    {
-        lexer_pb();
-        return lhs;
-    }
+        SYNTAX_OPERATOR temp_op;
+        if (!strcmp(val.text, "*"))
+        {
+            temp_op = SYNTAX_OPERATOR_MUL;
+        }
+        else if (!strcmp(val.text, "/"))
+        {
+            temp_op = SYNTAX_OPERATOR_DIV;
+        }
+        else if (!strcmp(val.text, "%"))
+        {
+            temp_op = SYNTAX_OPERATOR_REM;
+        }
+        else
+        {
+            lexer_pb();
+            return lhs;
+        }
 
-    // 式の右側がある時
-    SYNTAX_EXPRESSION rhs = parseTerm();
+        // 式の右側がある時
+        SYNTAX_EXPRESSION rhs = parseFactor();
 
-    SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
-    assert(eq != NULL);
-    eq->op = op;
-    eq->l = lhs;
-    eq->r = rhs;
-    return {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+        SYNTAX_EQUATION *eq = new SYNTAX_EQUATION;
+        assert(eq != NULL);
+        eq->op = temp_op;
+        eq->l = lhs;
+        eq->r = rhs;
+        lhs = {SYNTAX_TYPE_EQUATION, {.eq = eq}};
+    }
 }
 
 /*
