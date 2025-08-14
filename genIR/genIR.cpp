@@ -381,7 +381,7 @@ llvm::Value *genIR::genImmediate(SYNTAX_IMMEDIATE im)
         break;
     case SYNTAX_IMMEDIATE_TYPE_STRING:
         // llvm::Constant* strHelloWorld = builder.CreateGlobalStringPtr("hello world");
-        return builder.CreateGlobalStringPtr(im.data);
+        return builder.CreateGlobalStringPtr(escapeString(im.data));
     default:
         break;
     }
@@ -485,4 +485,30 @@ Variable *genIR::searchVariableTable(std::string name, VT &variableTable)
     }
 
     return nullptr;
+}
+
+std::string genIR::escapeString(char *c)
+{
+    std::string a = c;
+
+    std::string::size_type pos = a.find("\\");
+    while (pos != std::string::npos)
+    {
+        std::cout << pos << std::endl;
+
+        switch (a[pos + 1])
+        {
+        case 'n':
+            /* \n */
+            a.replace(pos, 2, "\n");
+            break;
+
+        default:
+            break;
+        }
+
+        pos = a.find("\\", pos + 1);
+    }
+
+    return a;
 }

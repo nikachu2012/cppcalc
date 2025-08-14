@@ -49,6 +49,7 @@ class genIR
 
     llvm::Type *getType(char *c);
     Variable *searchVariableTable(std::string name, VT &variableTable);
+    std::string escapeString(char *c);
 
     void genFunction(SYNTAX_FUNC_DEF fn);
     void genFunctionPrototype(SYNTAX_FUNC_DEF fn);
