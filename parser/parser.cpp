@@ -529,11 +529,10 @@ SYNTAX_EXPRESSION parseFactor()
         LEXER_RESULT val_next;
         LEXER_TYPE type_next = lexer(&val_next);
 
-        if (type_next == LEXER_TYPE_LEFT_BRACKET)
+        if (type_next == LEXER_TYPE_LEFT_BRACKET && val_next.op == '(')
         {
             // 関数呼び出し
             // keyword "(" expr [, expr]* ")"
-            assert(val_next.op == '(');
 
             SYNTAX_FUNCTIONCALL *p = new SYNTAX_FUNCTIONCALL;
             assert(p != NULL);
